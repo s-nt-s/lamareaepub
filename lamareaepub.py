@@ -24,6 +24,9 @@ tag_right=['p']
 sp=re.compile("\s+", re.UNICODE)
 nb=re.compile("^\s*\d+\.\s+", re.UNICODE)
 
+block=["h1","h2","h3","h4","h5","h6","p","div","table","article"]
+inline=["span","strong","b"]
+
 urls=["#", "javascript:void(0)"]
 editorial=None
 
@@ -93,6 +96,49 @@ def get_enlaces(soup,hjs=[]):
 		if len(txth)>0 and href not in urls and href not in hjs:
 			hjs.append(h)
 	return hjs
+
+def limpiar(nodo):
+	for s in nodo.findAll("span"):
+		if "style" not in s.attrs:
+			s.unwrap()
+
+	for i in nodo.findAll(block):
+		if i.find("img"):
+			continue
+		txt=sp.sub("",i.get_text().strip())
+		if len(txt)==0 or txt==".":
+			i.extract()
+		else:
+			i2=i.select(" > "+i.name)
+			if len(i2)==1:
+				txt2=sp.sub("",i2[0].get_text().strip())
+				if txt==txt2:
+					i.unwrap()
+
+	for i in nodo.findAll(inline):
+		txt=sp.sub("",i.get_text().strip())
+		if len(txt)==0:
+			i.unwrap()
+
+	for i in nodo.findAll(block + inline):
+		i2=i.select(" > "+i.name)
+		if len(i2)==1:
+			txt=sp.sub("",i.get_text().strip())
+			txt2=sp.sub("",i2[0].get_text().strip())
+			if txt==txt2:
+				i.unwrap()
+
+def limpiar2(nodo):
+	for n in nodo.findAll(["h1","h2","h3","h4","h5","h6","p","div","span","strong","b","i","article"]):
+		style=None
+		if "style" in n.attrs:
+			style=n.attrs["style"]
+		elif n.name=="span":
+			n.unwrap()
+			continue
+		n.attrs.clear()
+		if style:
+			n.attrs["style"]=style
 
 class Pagina:
 	def __init__(self, titulo, url, tipo=None):
@@ -198,44 +244,13 @@ print unicode(lamarea)
 
 soup=lamarea.soup()
 
-block=["h1","h2","h3","h4","h5","h6","p","div","table","article"]
-inline=["span","strong","b"]
-
 for div in soup.select("div.eltd-post-image-area"):
 	div.extract()
 
 for i in soup.findAll(["b"]):
 	i.unwrap()
 
-for s in soup.findAll("span"):
-	if "style" not in s.attrs:
-		s.unwrap()
-
-for i in soup.findAll(block):
-	if i.find("img"):
-		continue
-	txt=sp.sub("",i.get_text().strip())
-	if len(txt)==0 or txt==".":
-		i.extract()
-	else:
-		i2=i.select(" > "+i.name)
-		if len(i2)==1:
-			txt2=sp.sub("",i2[0].get_text().strip())
-			if txt==txt2:
-				i.unwrap()
-
-for i in soup.findAll(inline):
-	txt=sp.sub("",i.get_text().strip())
-	if len(txt)==0:
-		i.unwrap()
-
-for i in soup.findAll(block + inline):
-	i2=i.select(" > "+i.name)
-	if len(i2)==1:
-		txt=sp.sub("",i.get_text().strip())
-		txt2=sp.sub("",i2[0].get_text().strip())
-		if txt==txt2:
-			i.unwrap()
+limpiar(soup)
 
 autores=[]
 autores_nombres=[]
@@ -278,29 +293,8 @@ for art in soup.select("article"):
 			img.attrs["src"]=a.attrs["href"]
 			a.unwrap()
 
-for n in soup.body.findAll(["h1","h2","h3","h4","h5","h6","p","div","span","strong","b","i","article"]):
-	style=None
-	if "style" in n.attrs:
-		style=n.attrs["style"]
-	elif n.name=="span":
-		n.unwrap()
-		continue
-	n.attrs.clear()
-	if style:
-		n.attrs["style"]=style
+limpiar2(soup)
 
-for img in soup.findAll("img"):
-	src=img.attrs["src"]
-	img.attrs.clear()
-	img.attrs["src"]=src
-	div=img.parent
-	if div.name=="div":
-		div.attrs.clear()
-		if div.find("p"):
-			div.attrs["class"]="imagen conpie"
-		else:
-			div.attrs["class"]="imagen sinpie"
-			
 for auth in autores:
 	if auth.find("img"):
 		auth.attrs["class"]="autor conimg".split()
@@ -313,19 +307,12 @@ for a in autores_nombres:
 	meta.attrs["name"]="DC.contributor"
 	meta.attrs["content"]=a
 	soup.head.append(meta)
-'''
-if lamarea.hijas[0].tipo == 999:
-	edi=sp.sub(" ",lamarea.hijas[0].articulo.get_text()).strip().replace("\"","'")
-	meta=soup.new_tag("meta")
-	meta.attrs["name"]="DC.description"
-	meta.attrs["content"]=edi
-	soup.head.append(meta)
-'''
 
 if arg.apendices:
+	count=1
 	apendices=soup.new_tag("div")
-	for a in soup.findAll("a",attrs={'href': re.compile(r"^http://www.lamarea.com/2\d+/\d+/\d+/.*")}):
-		url=a.attrs["href"]
+	for aurl in soup.findAll("a",attrs={'href': re.compile(r"^http://www.lamarea.com/2\d+/\d+/\d+/.*")}):
+		url=aurl.attrs["href"]
 		response = br.open(url)
 		apsoup = bs4.BeautifulSoup(response.read(),"lxml")
 		t=apsoup.find("h2",attrs={'id': "titulo"})
@@ -333,8 +320,18 @@ if arg.apendices:
 		c=apsoup.find("div",attrs={'class': "shortcode-content"})
 	
 		if t and c:
+			if count == 1:
+				h=soup.new_tag("h1")
+				h.string="Apendices"
+				soup.body.append(h)
 			t.attrs.clear()
-			apendices.append(t)
+			mark="ap"+str(count)
+			t.attrs["id"]=mark
+			aurl.attrs.clear()
+			aurl.attrs["href"]="#"+mark
+
+			articulo=soup.new_tag("article")
+			
 			ap=soup.new_tag("p")
 			ia=apsoup.select("div.article-controls div.infoautor a")
 			if len(ia)>0:
@@ -346,23 +343,42 @@ if arg.apendices:
 			if cf:
 				ap.append(" "+sp.sub(" ",cf.get_text()).strip())
 			if len(sp.sub(" ",ap.get_text().strip()))>0:
-				apendices.append(ap)
+				articulo.append(ap)
 			if e:
-				apendices.append(e)
-			for i in apsoup.findAll("div",attrs={'class': re.compile(r"^article-photo.*")}):
-				apendices.append(i)
-			apendices.append(c)
-			print "> " +url
+				articulo.append(e)
+			for i in apsoup.findAll("div",attrs={'class': "article-photo"}):
+				nex=i.next_sibling
+				while nex and not nex.name:
+					nex=nex.next_sibling
+				if nex and nex.name=="div" and "class" in nex.attrs and "article-photo-foot" in nex.attrs["class"]:
+					nex.name="p"
+					i.append(nex)
+				articulo.append(i)
 
-	if len(apendices.contents)>0:
-		for img in apendices.findAll("img",attrs={'src': re.compile(".*banner.*")}):
-			img.extract()
+			articulo.append(c)
 	
-		h=soup.new_tag("h1")
-		h.string="Apendices"
-		soup.body.append(h)
-		soup.body.append(apendices)
+			for img in articulo.findAll("img",attrs={'src': re.compile(".*banner.*")}):
+				img.extract()
+			limpiar(articulo)
+			limpiar2(articulo)
 
+			soup.body.append(t)
+			soup.body.append(articulo)
+			count=count+1
+			
+			print url
+
+for img in soup.findAll("img"):
+	src=img.attrs["src"]
+	img.attrs.clear()
+	img.attrs["src"]=src
+	div=img.parent
+	if div.name=="div":
+		div.attrs.clear()
+		if div.find("p"):
+			div.attrs["class"]="imagen conpie"
+		else:
+			div.attrs["class"]="imagen sinpie"
 
 h = get_html(soup)
 with open("lamarea_"+str(numero)+".html", "wb") as file:
