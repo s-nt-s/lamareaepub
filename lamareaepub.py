@@ -17,6 +17,8 @@ arg = parser.parse_args()
 rPortada = re.compile(r"http://www.revista.lamarea.com/\S*?/wp-content/uploads/\S*?/\S*?Portada\S*?.jpg", re.IGNORECASE)
 tab=re.compile("^", re.MULTILINE)
 sp=re.compile("\s+", re.UNICODE)
+nonumb=re.compile("\D+")
+
 tag_concat=['u','ul','ol','i','em','strong']
 tag_round=['u','i','em','span','strong', 'a']
 tag_trim=['li', 'th', 'td', 'div','caption','h[1-6]']
@@ -188,8 +190,9 @@ class Pagina:
 	def soup(self,soup=None,nivel=1):
 		if self.articulo:
 			if self.tipo == 999:
-				self.articulo.find("img").extract()
-				self.articulo.find("img").extract()
+				if len(self.articulo.select("div.eltd-post-image img"))>0:
+					self.articulo.find("img").extract()
+					self.articulo.find("img").extract()
 			self.articulo.attrs["nivel"]=str(nivel)
 			return self.articulo
 		if self.tipo==0:
@@ -211,7 +214,9 @@ class Pagina:
 page = br.open(arg.url)
 
 portada=rPortada.search(page.read()).group()
-numero=int(portada.split('_')[-1].split('.')[0])
+imagenportada=portada.split('/')[-1].split('.')[0]
+
+numero=int(nonumb.sub("",imagenportada))
 
 lamarea=Pagina("La Marea #"+str(numero), portada, 0)
 
@@ -246,7 +251,9 @@ soup=lamarea.soup()
 
 for div in soup.select("div.eltd-post-image-area"):
 	div.extract()
-
+for p in soup.findAll("p",text="FALTA IMAGEN PORTADA"):
+	p.extract()
+	
 for i in soup.findAll(["b"]):
 	i.unwrap()
 
@@ -268,6 +275,8 @@ for art in soup.select("article"):
 			h.name="h"+str(nivel)
 		nivel=nivel+1
 
+	for img in art.findAll("img",attrs={'src': re.compile(r".*la-marea-250x250\.jpg.*")}):
+		img.extract()
 	auth=art.find("div", attrs={'class': "saboxplugin-wrap"})
 	if not auth:
 		auth=art.find("div", attrs={'class': "saboxplugin-authorname"})
@@ -322,7 +331,7 @@ if arg.apendices:
 		if t and c:
 			if count == 1:
 				h=soup.new_tag("h1")
-				h.string="Apendices"
+				h.string="APENDICES"
 				soup.body.append(h)
 			t.attrs.clear()
 			mark="ap"+str(count)
@@ -353,11 +362,15 @@ if arg.apendices:
 				if nex and nex.name=="div" and "class" in nex.attrs and "article-photo-foot" in nex.attrs["class"]:
 					nex.name="p"
 					i.append(nex)
+				img=i.find("img")
+				if not img or "src" not in img.attrs or img.attrs["src"]=="":
+					i.extract()
+					continue
 				articulo.append(i)
 
 			articulo.append(c)
 	
-			for img in articulo.findAll("img",attrs={'src': re.compile(".*banner.*")}):
+			for img in articulo.findAll("img",attrs={'src': re.compile(r".*banner.*")}):
 				img.extract()
 			limpiar(articulo)
 			limpiar2(articulo)
