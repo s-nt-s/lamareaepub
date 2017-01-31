@@ -157,8 +157,9 @@ class Pagina:
 		self.articulo = None
 		self.autor = None
 		if url == editorial:
-			self.titulo = "Editorial: " + titulo
 			self.tipo = 999
+			if titulo.lower() != "editorial":
+				self.titulo = "Editorial: " + titulo
 		urls.append(url)
 
 	def add(self,a, tipo=None,hjs=[]):
@@ -166,6 +167,7 @@ class Pagina:
 		txt=a.get_text().strip()
 		if len(txt)==0 or len(url)==0 or url in urls:
 			return
+		soup=None
 		art=None
 		if not tipo:
 			page = br.open(url)
@@ -179,6 +181,8 @@ class Pagina:
 		p.articulo=art
 		if p.tipo == 999:
 			lamarea.hijas.insert(0,p)
+			if soup and p.titulo.lower() == "editorial":
+				p.titulo = "Editorial: " + soup.find("h1").get_text()
 		else:
 			self.hijas.append(p)
 		for a in hjs:
