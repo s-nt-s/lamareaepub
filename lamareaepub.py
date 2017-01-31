@@ -5,6 +5,7 @@ from mechanize import Browser
 import bs4
 import re
 import argparse
+import time
 
 parser = argparse.ArgumentParser(description='Genera un html único a partir de www.revista.lamarea.com')
 parser.add_argument("url", help="Url completa al número de la revista")
@@ -131,6 +132,11 @@ def limpiar(nodo):
 				i.unwrap()
 
 def limpiar2(nodo):
+	for img in nodo.select("a > img"):
+		a=img.parent
+		if len(a.get_text().strip())==0:
+			img.attrs["src"]=a.attrs["href"]
+			a.unwrap()
 	for n in nodo.findAll(["h1","h2","h3","h4","h5","h6","p","div","span","strong","b","i","article"]):
 		style=None
 		if "style" in n.attrs:
@@ -251,8 +257,6 @@ soup=lamarea.soup()
 
 for div in soup.select("div.eltd-post-image-area"):
 	div.extract()
-for p in soup.findAll("p",text="FALTA IMAGEN PORTADA"):
-	p.extract()
 	
 for i in soup.findAll(["b"]):
 	i.unwrap()
@@ -296,12 +300,6 @@ for art in soup.select("article"):
 			for b in auth.select("br"):
 				b.extract()
 
-	for img in art.select("a > img"):
-		a=img.parent
-		if len(a.get_text().strip())==0:
-			img.attrs["src"]=a.attrs["href"]
-			a.unwrap()
-
 limpiar2(soup)
 
 for auth in autores:
@@ -320,12 +318,17 @@ for a in autores_nombres:
 if arg.apendices:
 	count=1
 	apendices=soup.new_tag("div")
-	for aurl in soup.findAll("a",attrs={'href': re.compile(r"^http://www.lamarea.com/2\d+/\d+/\d+/.*")}):
-		url=aurl.attrs["href"]
+	urls=[a.attrs["href"] for a in soup.findAll("a",attrs={'href': re.compile(r"^http://www.lamarea.com/2\d+/\d+/\d+/.*")})]
+	urls = sorted(list(set(urls)))
+
+	for url in urls:
+		slp=(count/10)+(count % 2)
+		time.sleep(slp)
+		
 		response = br.open(url)
 		apsoup = bs4.BeautifulSoup(response.read(),"lxml")
 		t=apsoup.find("h2",attrs={'id': "titulo"})
-		e=apsoup.find("div",attrs={'class': "except"})
+		e=None #apsoup.find("div",attrs={'class': "except"})
 		c=apsoup.find("div",attrs={'class': "shortcode-content"})
 	
 		if t and c:
@@ -333,11 +336,13 @@ if arg.apendices:
 				h=soup.new_tag("h1")
 				h.string="APENDICES"
 				soup.body.append(h)
+			mkr="ap"+str(count)
 			t.attrs.clear()
-			mark="ap"+str(count)
-			t.attrs["id"]=mark
-			aurl.attrs.clear()
-			aurl.attrs["href"]="#"+mark
+			t.attrs["id"]=mkr
+			
+			for aurl in soup.findAll("a",attrs={'href': url}):
+				aurl.attrs.clear()
+				aurl.attrs["href"]="#"+mkr
 
 			articulo=soup.new_tag("article")
 			
@@ -374,6 +379,16 @@ if arg.apendices:
 				img.extract()
 			limpiar(articulo)
 			limpiar2(articulo)
+			for p in articulo.select("p"):
+				if p.find("img") and p.find("span"):
+					div=soup.new_tag("div")
+					for img in p.findAll("img"):
+						div.append(img)
+					s=soup.new_tag("p")
+					s.string=p.get_text()
+					div.append(s)
+					p.replaceWith(div)
+					
 
 			soup.body.append(t)
 			soup.body.append(articulo)
@@ -392,6 +407,9 @@ for img in soup.findAll("img"):
 			div.attrs["class"]="imagen conpie"
 		else:
 			div.attrs["class"]="imagen sinpie"
+
+for n in soup.findAll(text=lambda text:isinstance(text, bs4.Comment)):
+	n.extract()
 
 h = get_html(soup)
 with open("lamarea_"+str(numero)+".html", "wb") as file:
