@@ -27,7 +27,8 @@ tag_right=['p']
 sp=re.compile("\s+", re.UNICODE)
 nb=re.compile("^\s*\d+\.\s+", re.UNICODE)
 
-block=["h1","h2","h3","h4","h5","h6","p","div","table","article"]
+heads=["h1","h2","h3","h4","h5","h6"]
+block= heads + ["p","div","table","article"]
 inline=["span","strong","b"]
 
 urls=["#", "javascript:void(0)"]
@@ -90,7 +91,7 @@ def get_enlaces(soup,hjs=[]):
 	if not wpb:
 		return hjs
 	noes = wpb.select("div.eltd-post-info-date a")
-	hrefs = wpb.select("h1 a, h2 a, h3 a, h4 a, h5 a, h6 a") + wpb.select("a")
+	hrefs = wpb.select(" a, ".join(heads)) + wpb.select("a")
 	for h in hrefs:
 		if h in noes:
 			continue
@@ -126,8 +127,8 @@ def limpiar(nodo):
 	for i in nodo.findAll(block + inline):
 		i2=i.select(" > "+i.name)
 		if len(i2)==1:
-			txt=sp.sub("",i.get_text().strip())
-			txt2=sp.sub("",i2[0].get_text().strip())
+			txt=sp.sub("",i.get_text()).strip()
+			txt2=sp.sub("",i2[0].get_text()).strip()
 			if txt==txt2:
 				i.unwrap()
 
@@ -137,7 +138,7 @@ def limpiar2(nodo):
 		if len(a.get_text().strip())==0:
 			img.attrs["src"]=a.attrs["href"]
 			a.unwrap()
-	for n in nodo.findAll(["h1","h2","h3","h4","h5","h6","p","div","span","strong","b","i","article"]):
+	for n in nodo.findAll(heads + ["p","div","span","strong","b","i","article"]):
 		style=None
 		if "style" in n.attrs:
 			style=n.attrs["style"]
@@ -319,6 +320,12 @@ for a in autores_nombres:
 	meta.attrs["content"]=a
 	soup.head.append(meta)
 
+art1=soup.find("article")
+meta=soup.new_tag("meta")
+meta.attrs["name"]="DC.description"
+meta.attrs["content"]=sp.sub(" ",art1.get_text()).strip()
+soup.head.append(meta)
+
 if arg.apendices:
 	count=1
 	apendices=soup.new_tag("div")
@@ -414,6 +421,9 @@ for img in soup.findAll("img"):
 
 for n in soup.findAll(text=lambda text:isinstance(text, bs4.Comment)):
 	n.extract()
+for div in soup.findAll("div"):
+	if len(div.findAll(heads))>0 or (len(div.select(" > *"))==0 and len(sp.sub("",div.get_text().strip()))==0):
+		div.unwrap()
 
 h = get_html(soup)
 with open("lamarea_"+str(numero)+".html", "wb") as file:
