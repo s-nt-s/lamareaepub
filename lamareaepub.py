@@ -399,7 +399,9 @@ if arg.apendices:
 					s.string=p.get_text()
 					div.append(s)
 					p.replaceWith(div)
-					
+			for div in articulo.select("div"):
+				if "style" not in div.attrs and not div.select("img"):
+					div.unwrap()
 
 			soup.body.append(t)
 			soup.body.append(articulo)
