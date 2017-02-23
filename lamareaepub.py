@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
- 
+
 import sys
 from mechanize import Browser
 import bs4
@@ -15,7 +15,7 @@ parser.add_argument('--apendices', help='Genera un capítulo de apendices con lo
 
 arg = parser.parse_args()
 
-rPortada = re.compile(r"http://www.revista.lamarea.com/\S*?/wp-content/uploads/\S*?/\S*?Portada\S*?.jpg", re.IGNORECASE)
+rPortada = re.compile(r"http://www.revista.lamarea.com/\S*?\bwp-content/uploads/\S*?/\S*?Portada\S*?.jpg", re.IGNORECASE)
 tab=re.compile("^", re.MULTILINE)
 sp=re.compile("\s+", re.UNICODE)
 nonumb=re.compile("\D+")
@@ -197,7 +197,7 @@ class Pagina:
 			st=st+"\n"+unicode(h)
 		st=tab.sub("  ",st)
 		return ln+st
-	
+
 	def soup(self,soup=None,nivel=1):
 		if self.articulo:
 			if self.tipo == 999:
@@ -215,7 +215,7 @@ class Pagina:
 			h.string=i.titulo
 			div.append(h)
 			div.append(i.soup(soup,nivel+1))
-		
+
 		if self.tipo==0:
 			soup.body.append(div)
 			div.unwrap()
@@ -262,7 +262,7 @@ soup=lamarea.soup()
 
 for div in soup.select("div.eltd-post-image-area"):
 	div.extract()
-	
+
 for i in soup.findAll(["b"]):
 	i.unwrap()
 
@@ -335,13 +335,13 @@ if arg.apendices:
 	for url in urls:
 		slp=(count/10)+(count % 2)
 		time.sleep(slp)
-		
+
 		response = br.open(url)
 		apsoup = bs4.BeautifulSoup(response.read(),"lxml")
 		t=apsoup.find("h2",attrs={'id': "titulo"})
 		e=None #apsoup.find("div",attrs={'class': "except"})
 		c=apsoup.find("div",attrs={'class': "shortcode-content"})
-	
+
 		if t and c:
 			if count == 1:
 				h=soup.new_tag("h1")
@@ -350,13 +350,13 @@ if arg.apendices:
 			mkr="ap"+str(count)
 			t.attrs.clear()
 			t.attrs["id"]=mkr
-			
+
 			for aurl in soup.findAll("a",attrs={'href': url}):
 				aurl.attrs.clear()
 				aurl.attrs["href"]="#"+mkr
 
 			articulo=soup.new_tag("article")
-			
+
 			ap=soup.new_tag("p")
 			ia=apsoup.select("div.article-controls div.infoautor a")
 			if len(ia)>0:
@@ -385,7 +385,7 @@ if arg.apendices:
 				articulo.append(i)
 
 			articulo.append(c)
-	
+
 			for img in articulo.findAll("img",attrs={'src': re.compile(r".*banner.*")}):
 				img.extract()
 			limpiar(articulo)
@@ -406,7 +406,7 @@ if arg.apendices:
 			soup.body.append(t)
 			soup.body.append(articulo)
 			count=count+1
-			
+
 			print url
 
 for img in soup.findAll("img"):
