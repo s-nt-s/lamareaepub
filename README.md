@@ -18,7 +18,7 @@ Opcionalmente, si se ejecuta con el comando `--apendices` se generará un capitu
 
 2- Lanzar `miepub.sh`
 
-`miepub.sh` es un script que se puede obtener aquí https://github.com/s-nt-s/miepub (requiere [`pandoc 1.19.2`](https://github.com/jgm/pandoc/releases) o mayor) y que ejecutandolo así::
+`miepub.sh` es un script que se puede obtener aquí https://github.com/s-nt-s/miepub (requiere [`pandoc 1.19.2`](https://github.com/jgm/pandoc/releases) o mayor) y que ejecutandolo así:
 
 ```console
 $ ./miepub.sh lamarea_XX.html
