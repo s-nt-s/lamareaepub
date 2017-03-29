@@ -6,6 +6,8 @@ import bs4
 import re
 import argparse
 import time
+from urlparse import urljoin
+from urlparse import urlparse
 
 parser = argparse.ArgumentParser(
     description='Genera un html único a partir de www.revista.lamarea.com')
@@ -151,11 +153,17 @@ def limpiar(nodo):
                 i.unwrap()
 
 
-def limpiar2(nodo):
+def limpiar2(nodo, url=None):
     for img in nodo.select("a > img"):
         a = img.parent
         if len(a.get_text().strip()) == 0:
-            img.attrs["src"] = a.attrs["href"]
+            href = a.attrs["href"]
+            if url:
+                hrf = urljoin(url, href)
+                src = urljoin(url, img.attrs["src"])
+                if urlparse(hrf).netloc != urlparse(src).netloc:
+                    continue
+            img.attrs["src"] = href
             a.unwrap()
     for n in nodo.findAll(heads + ["p", "div", "span", "strong", "b", "i", "article"]):
         style = None
@@ -254,8 +262,12 @@ page = br.open(arg.url)
 
 portada = rPortada.search(page.read()).group()
 imagenportada = portada.split('/')[-1].split('.')[0]
+numb = nonumb.sub("", imagenportada)
 
-numero = int(nonumb.sub("", imagenportada))
+if numb.isdigit():
+    numero = int(numb)
+else:
+    numero = int(nonumb.sub("", arg.usuario))
 
 lamarea = Pagina("La Marea #" + str(numero), portada, 0)
 
@@ -420,7 +432,7 @@ if arg.apendices:
             for img in articulo.findAll("img", attrs={'src': re.compile(r".*banner.*")}):
                 img.extract()
             limpiar(articulo)
-            limpiar2(articulo)
+            limpiar2(articulo, url)
             for p in articulo.select("p"):
                 if p.find("img") and p.find("span"):
                     div = soup.new_tag("div")
