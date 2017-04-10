@@ -316,6 +316,7 @@ for art in soup.select("article"):
     art.find("div").unwrap()
     cabs = []
     nivel = int(art.attrs["nivel"])
+    hcab = ["h"+str(i) for i in range(nivel,7)]
     for n in range(1, 7):
         cab = art.select("h" + str(n))
         if len(cab) > 0:
@@ -324,6 +325,19 @@ for art in soup.select("article"):
         for h in cab:
             h.name = "h" + str(nivel)
         nivel = nivel + 1
+    cambios=len(hcab)
+    while cambios>0:
+        cambios=0
+        ct=[]
+        for h in art.findAll(hcab):
+            c=int(h.name[1])
+            aux=[x for x in ct if x<c]
+            if len(aux)>0:
+                a=aux[-1]+1
+                if a<c:
+                    cambios += 1
+                    h.name="h"+str(a)
+            ct.append(c)
 
     for img in art.findAll("img", attrs={'src': re.compile(r".*la-marea-250x250\.jpg.*")}):
         img.extract()
