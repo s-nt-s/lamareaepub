@@ -16,12 +16,12 @@ Esto generara un fichero `lamarea_XX.html`, donde `XX` es el número de esa edic
 
 Opcionalmente, si se ejecuta con el comando `--apendices` se generará un capitulo adicional llamado *APÉNDICES* que incluirá los artículos de http://www.lamarea.com/ que hubieran sido referenciados en el número.
 
-2- Lanzar `miepub.sh`
+2- Lanzar `miepub`
 
-`miepub.sh` es un script que se puede obtener aquí https://github.com/s-nt-s/miepub (requiere [`pandoc 1.19.2`](https://github.com/jgm/pandoc/releases) o mayor) y que ejecutandolo así:
+`miepub` es un script que se puede obtener aquí https://github.com/s-nt-s/miepub (requiere [`pandoc 1.19.2`](https://github.com/jgm/pandoc/releases) o mayor) y que ejecutandolo así:
 
 ```console
-$ ./miepub.sh lamarea_XX.html
+$ miepub lamarea_XX.html
 ```
 
 creará el epub con el nombre `lamarea_XX.epub`
