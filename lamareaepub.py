@@ -18,6 +18,10 @@ parser.add_argument(
     '--clave', help='Contraseña de acceso www.revista.lamarea.com', required=True)
 parser.add_argument(
     '--apendices', help='Genera un capítulo de apendices con los conetenidos de los enlaces a www.lamarea.com', required=False, action="store_true")
+parser.add_argument(
+    '--num', type=int, help='Número de la edicción')
+parser.add_argument(
+    '--portada', help='URL a la portada del número')
 
 arg = parser.parse_args()
 
@@ -91,11 +95,12 @@ def get_tpt(title, img):
 		<head>
 			<title>%s</title>
 			<meta charset="utf-8"/>
-			<link href="main.css" rel="stylesheet" type="text/css"/>
 			<meta content="La Marea" name="DC.creator" />
 			<meta content="MásPúblico" name="DC.publisher" />
 			<meta content="Creative Commons BY/SA 3.0" name="DC.rights" />
 			<meta property="og:image" content="%s" />
+            <link rel="stylesheet" type="text/css" href="theme.css">
+            <link rel="stylesheet" type="text/css" href="print.css" media="print">
 		</head>
 		<body>
 		</body>
@@ -130,7 +135,7 @@ def limpiar(nodo):
         if i.find("img"):
             continue
         txt = sp.sub("", i.get_text().strip())
-        if len(txt) == 0 or txt == ".":
+        if len(txt) == 0 or txt == "." or txt == "FALTAIMAGENPORTADA":
             i.extract()
         else:
             i2 = i.select(" > " + i.name)
@@ -229,7 +234,7 @@ class Pagina:
         return ln + st
 
     def reordenar_hijas(self):
-        for i in range(len(self.hijas)-1):
+        for i in range(len(self.hijas) - 1):
             if self.hijas[i].titulo.lower() == "anuncios breves":
                 self.hijas.append(self.hijas.pop(i))
                 return
@@ -260,16 +265,19 @@ class Pagina:
 
 page = br.open(arg.url)
 
-portada = rPortada.search(page.read()).group()
-imagenportada = portada.split('/')[-1].split('.')[0]
-numb = nonumb.sub("", imagenportada)
+if not arg.portada:
+    arg.portada = rPortada.search(page.read()).group()
 
-if numb.isdigit():
-    numero = int(numb)
-else:
-    numero = int(nonumb.sub("", arg.usuario))
+if not arg.num:
+    imagenportada = arg.portada.split('/')[-1].split('.')[0]
+    numb = nonumb.sub("", imagenportada)
 
-lamarea = Pagina("La Marea #" + str(numero), portada, 0)
+    if numb.isdigit():
+        arg.num = int(numb)
+    else:
+        arg.num = int(nonumb.sub("", arg.usuario))
+
+lamarea = Pagina("La Marea #" + str(arg.num), arg.portada, 0)
 
 br.select_form(name="login-form")
 br.form["log"] = arg.usuario
@@ -316,7 +324,7 @@ for art in soup.select("article"):
     art.find("div").unwrap()
     cabs = []
     nivel = int(art.attrs["nivel"])
-    hcab = ["h"+str(i) for i in range(nivel,7)]
+    hcab = ["h" + str(i) for i in range(nivel, 7)]
     for n in range(1, 7):
         cab = art.select("h" + str(n))
         if len(cab) > 0:
@@ -325,18 +333,18 @@ for art in soup.select("article"):
         for h in cab:
             h.name = "h" + str(nivel)
         nivel = nivel + 1
-    cambios=len(hcab)
-    while cambios>0:
-        cambios=0
-        ct=[]
+    cambios = len(hcab)
+    while cambios > 0:
+        cambios = 0
+        ct = []
         for h in art.findAll(hcab):
-            c=int(h.name[1])
-            aux=[x for x in ct if x<c]
-            if len(aux)>0:
-                a=aux[-1]+1
-                if a<c:
+            c = int(h.name[1])
+            aux = [x for x in ct if x < c]
+            if len(aux) > 0:
+                a = aux[-1] + 1
+                if a < c:
                     cambios += 1
-                    h.name="h"+str(a)
+                    h.name = "h" + str(a)
             ct.append(c)
 
     for img in art.findAll("img", attrs={'src': re.compile(r".*la-marea-250x250\.jpg.*")}):
@@ -473,8 +481,11 @@ for img in soup.findAll("img"):
     div = img.parent
     if div.name == "div":
         div.attrs.clear()
-        if div.find("p"):
-            div.attrs["class"] = "imagen conpie"
+        p = div.find("p")
+        if p:
+            div.name = "figure"
+            p.name = "figcaption"
+            #div.attrs["class"] = "imagen conpie"
         else:
             div.attrs["class"] = "imagen sinpie"
 
@@ -485,5 +496,5 @@ for div in soup.findAll("div"):
         div.unwrap()
 
 h = get_html(soup)
-with open("lamarea_" + str(numero) + ".html", "wb") as file:
+with open("lamarea_" + str(arg.num) + ".html", "wb") as file:
     file.write(h.encode('utf8'))

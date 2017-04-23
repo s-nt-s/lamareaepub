@@ -16,4 +16,17 @@ div.imagen.conpie p {
     margin-top: 4px;
     margin-bottom: 6px;
     text-align: center;
+    display: table-caption;
+}
+figure {
+    border: 1px solid black;
+    padding: 5px 5px 0;
+    display: inline-block;
+    margin: 0px;
+}
+figure figcaption {
+    font-size: 75%;
+    margin-top: 4px;
+    margin-bottom: 6px;
+    text-align: center;
 }
