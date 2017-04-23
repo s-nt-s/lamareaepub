@@ -18,10 +18,10 @@ Opcionalmente, si se ejecuta con el comando `--apendices` se generará un capitu
 
 2- Lanzar `miepub`
 
-`miepub` es un script que se puede obtener aquí https://github.com/s-nt-s/miepub (requiere [`pandoc 1.19.2`](https://github.com/jgm/pandoc/releases) o mayor) y que ejecutandolo así:
+`miepub.py` es un script que se puede obtener aquí https://github.com/s-nt-s/miepub (requiere [`pandoc 1.19.2`](https://github.com/jgm/pandoc/releases) o mayor) y que ejecutandolo así:
 
 ```console
-$ miepub lamarea_XX.html
+$ ./miepub.py lamarea_XX.html
 ```
 
 creará el epub con el nombre `lamarea_XX.epub`
