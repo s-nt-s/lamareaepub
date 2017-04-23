@@ -22,6 +22,8 @@ parser.add_argument(
     '--num', type=int, help='Número de la edicción')
 parser.add_argument(
     '--portada', help='URL a la portada del número')
+parser.add_argument(
+    '--fecha', help='Fecha de publicación')
 
 arg = parser.parse_args()
 
@@ -30,6 +32,7 @@ rPortada = re.compile(
 tab = re.compile("^", re.MULTILINE)
 sp = re.compile("\s+", re.UNICODE)
 nonumb = re.compile("\D+")
+re_apendices = re.compile(r"^http://www.lamarea.com/2\d+/\d+/\d+/.*")
 
 tag_concat = ['u', 'ul', 'ol', 'i', 'em', 'strong']
 tag_round = ['u', 'i', 'em', 'span', 'strong', 'a']
@@ -44,6 +47,8 @@ inline = ["span", "strong", "b"]
 
 urls = ["#", "javascript:void(0)"]
 editorial = None
+
+meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
 
 br = Browser()
 
@@ -95,12 +100,12 @@ def get_tpt(title, img):
 		<head>
 			<title>%s</title>
 			<meta charset="utf-8"/>
+            <link rel="stylesheet" type="text/css" href="theme.css">
+            <link rel="stylesheet" type="text/css" href="print.css" media="print">
+			<meta property="og:image" content="%s" />
 			<meta content="La Marea" name="DC.creator" />
 			<meta content="MásPúblico" name="DC.publisher" />
 			<meta content="Creative Commons BY/SA 3.0" name="DC.rights" />
-			<meta property="og:image" content="%s" />
-            <link rel="stylesheet" type="text/css" href="theme.css">
-            <link rel="stylesheet" type="text/css" href="print.css" media="print">
 		</head>
 		<body>
 		</body>
@@ -172,15 +177,19 @@ def limpiar2(nodo, url=None):
             a.unwrap()
     for n in nodo.findAll(heads + ["p", "div", "span", "strong", "b", "i", "article"]):
         style = None
+        id = None
         if "style" in n.attrs:
             style = n.attrs["style"]
+        if "id" in n.attrs:
+            id = n.attrs["id"]
         elif n.name == "span":
             n.unwrap()
             continue
         n.attrs.clear()
         if style:
             n.attrs["style"] = style
-
+        if id and n.name in heads and id.startswith("http"):
+            n.attrs["id"] = id
 
 class Pagina:
 
@@ -254,6 +263,7 @@ class Pagina:
         for i in self.hijas:
             h = soup.new_tag("h" + str(nivel))
             h.string = i.titulo
+            h.attrs["id"] = i.url
             div.append(h)
             div.append(i.soup(soup, nivel + 1))
 
@@ -263,21 +273,86 @@ class Pagina:
             return soup
         return div
 
+
+class Apendice:
+    
+    def __init__(self, url):
+        response = br.open(url)
+        self.soup = bs4.BeautifulSoup(response.read(), "lxml")
+        self.titulo = self.soup.find("h2", attrs={'id': "titulo"})
+        self.content = self.soup.find("div", attrs={'class': "shortcode-content"})
+        self.url = url
+        self.articulo = None
+        if self.titulo and self.content:
+            self.urls = [a.attrs["href"] for a in self.content.findAll("a", attrs={'href': re_apendices})]
+            self.urls = sorted(list(set(self.urls)))
+            self.titulo.attrs.clear()
+            self.titulo.attrs["id"] = url
+
+    def isok(self):
+        return self.titulo and self.content
+
+    def build_articulo(self, soup):
+        if self.articulo:
+            return self.articulo
+        
+        self.articulo = soup.new_tag("article")
+        ap = soup.new_tag("p")
+        
+        ia = self.soup.select("div.article-controls div.infoautor a")
+        if len(ia) > 0:
+            ia = ia[0]
+            ia.attrs.clear()
+            ia.name = "strong"
+            ap.append(ia)
+        cf = self.soup.find("div", attrs={'class': "calendar-full"})
+        if cf:
+            ap.append(" " + sp.sub(" ", cf.get_text()).strip())
+        if len(sp.sub(" ", ap.get_text().strip())) > 0:
+            self.articulo.append(ap)
+        e = None  # self.soup.find("div",attrs={'class': "except"})
+        if e:
+            self.articulo.append(e)
+        for i in self.soup.findAll("div", attrs={'class': "article-photo"}):
+            nex = i.next_sibling
+            while nex and not nex.name:
+                nex = nex.next_sibling
+            if nex and nex.name == "div" and "class" in nex.attrs and "article-photo-foot" in nex.attrs["class"]:
+                nex.name = "p"
+                i.append(nex)
+            img = i.find("img")
+            if not img or "src" not in img.attrs or img.attrs["src"] == "":
+                i.extract()
+                continue
+            self.articulo.append(i)
+
+        self.articulo.append(a.content)
+
+        for img in self.articulo.findAll("img", attrs={'src': re.compile(r".*banner.*")}):
+            img.extract()
+        limpiar(self.articulo)
+        limpiar2(self.articulo, self.url)
+        for p in self.articulo.select("p"):
+            if p.find("img") and p.find("span"):
+                div = soup.new_tag("div")
+                for img in p.findAll("img"):
+                    div.append(img)
+                s = soup.new_tag("p")
+                s.string = p.get_text()
+                div.append(s)
+                p.replaceWith(div)
+        for div in self.articulo.select("div"):
+            if "style" not in div.attrs and not div.select("img"):
+                div.unwrap()
+
+        return self.articulo
+
+
 page = br.open(arg.url)
 
 if not arg.portada:
     arg.portada = rPortada.search(page.read()).group()
 
-if not arg.num:
-    imagenportada = arg.portada.split('/')[-1].split('.')[0]
-    numb = nonumb.sub("", imagenportada)
-
-    if numb.isdigit():
-        arg.num = int(numb)
-    else:
-        arg.num = int(nonumb.sub("", arg.usuario))
-
-lamarea = Pagina("La Marea #" + str(arg.num), arg.portada, 0)
 
 br.select_form(name="login-form")
 br.form["log"] = arg.usuario
@@ -285,6 +360,29 @@ br.form["pwd"] = arg.clave
 page = br.submit()
 
 soup = bs4.BeautifulSoup(page.read(), "lxml")
+
+info = soup.find("div",attrs={'id': "info"})
+if not arg.num:
+    n=info.find("p",attrs={'class': "numero"}) if info else None
+    numb=None
+    if n:
+        numb = nonumb.sub("", n.get_text())
+    if not numb or not numb.isdigit():
+        imagenportada = arg.portada.split('/')[-1].split('.')[0]
+        numb = nonumb.sub("", imagenportada)
+    if not numb or not numb.isdigit():
+        numb = nonumb.sub("", arg.usuario)
+    arg.num = int(numb)
+
+if not arg.fecha and info:
+    p = info.find("p").get_text()
+    p = sp.sub(" ", p).strip().lower()
+    m, y = p.split(" ")
+    m = meses.index(m[0:3])+1
+    arg.fecha = "%s-%02d" % (y, m)
+
+lamarea = Pagina("La Marea #" + str(arg.num), arg.portada, 0)
+
 editorial = soup.find("a", text="Editorial")
 if editorial:
     editorial = editorial.attrs["href"]
@@ -375,9 +473,15 @@ for auth in autores:
         auth.attrs["class"] = "autor conimg".split()
     else:
         auth.attrs["class"] = "autor sinimg".split()
-
+'''
+if arg.fecha:
+    meta = soup.new_tag("meta")
+    meta.attrs["name"] = "DC.date"
+    meta.attrs["content"] = arg.fecha
+    soup.head.append(meta)
+'''
 autores_nombres = sorted(
-    list(set([s.get_text() for s in soup.body.select("div.autor strong")])))
+    list(set([sp.sub(" ",s.get_text()) for s in soup.body.select("div.autor strong")])))
 for a in autores_nombres:
     meta = soup.new_tag("meta")
     meta.attrs["name"] = "DC.contributor"
@@ -391,88 +495,51 @@ meta.attrs["content"] = sp.sub(" ", art1.get_text()).strip()
 soup.head.append(meta)
 
 if arg.apendices:
-    count = 1
-    apendices = soup.new_tag("div")
     urls = [a.attrs["href"]
-            for a in soup.findAll("a", attrs={'href': re.compile(r"^http://www.lamarea.com/2\d+/\d+/\d+/.*")})]
+            for a in soup.findAll("a", attrs={'href': re_apendices})]
     urls = sorted(list(set(urls)))
 
-    for url in urls:
+    count = 0
+    apendices = []
+    print "\nBuscando ápendices "
+    while count<len(urls):
+        sys.stdout.write('.')
+        sys.stdout.flush()
         slp = (count / 10) + (count % 2)
         time.sleep(slp)
+        a = Apendice(urls[count])
+        if a.isok():
+            apendices.append(a)
+            for u in a.urls:
+                if u not in urls:
+                    urls.append(u)
+        count += 1
 
-        response = br.open(url)
-        apsoup = bs4.BeautifulSoup(response.read(), "lxml")
-        t = apsoup.find("h2", attrs={'id': "titulo"})
-        e = None  # apsoup.find("div",attrs={'class': "except"})
-        c = apsoup.find("div", attrs={'class': "shortcode-content"})
+    print ""
+    if len(apendices)>0:
+        h = soup.new_tag("h1")
+        h.string = "APÉNDICES"
+        soup.body.append(h)
+        apendices = sorted(apendices, key=lambda k: k.url) 
+        for a in apendices:
+            soup.body.append(a.titulo)
+            soup.body.append(a.build_articulo(soup))
+            print a.titulo.get_text()
+            print a.url
 
-        if t and c:
-            if count == 1:
-                h = soup.new_tag("h1")
-                h.string = "APÉNDICES"
-                soup.body.append(h)
-            mkr = "ap" + str(count)
-            t.attrs.clear()
-            t.attrs["id"] = mkr
-
-            for aurl in soup.findAll("a", attrs={'href': url}):
-                aurl.attrs.clear()
-                aurl.attrs["href"] = "#" + mkr
-
-            articulo = soup.new_tag("article")
-
-            ap = soup.new_tag("p")
-            ia = apsoup.select("div.article-controls div.infoautor a")
-            if len(ia) > 0:
-                ia = ia[0]
-                ia.attrs.clear()
-                ia.name = "strong"
-                ap.append(ia)
-            cf = apsoup.find("div", attrs={'class': "calendar-full"})
-            if cf:
-                ap.append(" " + sp.sub(" ", cf.get_text()).strip())
-            if len(sp.sub(" ", ap.get_text().strip())) > 0:
-                articulo.append(ap)
-            if e:
-                articulo.append(e)
-            for i in apsoup.findAll("div", attrs={'class': "article-photo"}):
-                nex = i.next_sibling
-                while nex and not nex.name:
-                    nex = nex.next_sibling
-                if nex and nex.name == "div" and "class" in nex.attrs and "article-photo-foot" in nex.attrs["class"]:
-                    nex.name = "p"
-                    i.append(nex)
-                img = i.find("img")
-                if not img or "src" not in img.attrs or img.attrs["src"] == "":
-                    i.extract()
-                    continue
-                articulo.append(i)
-
-            articulo.append(c)
-
-            for img in articulo.findAll("img", attrs={'src': re.compile(r".*banner.*")}):
-                img.extract()
-            limpiar(articulo)
-            limpiar2(articulo, url)
-            for p in articulo.select("p"):
-                if p.find("img") and p.find("span"):
-                    div = soup.new_tag("div")
-                    for img in p.findAll("img"):
-                        div.append(img)
-                    s = soup.new_tag("p")
-                    s.string = p.get_text()
-                    div.append(s)
-                    p.replaceWith(div)
-            for div in articulo.select("div"):
-                if "style" not in div.attrs and not div.select("img"):
-                    div.unwrap()
-
-            soup.body.append(t)
-            soup.body.append(articulo)
-            count = count + 1
-
-            print url
+count = 0
+for h in soup.findAll(heads, attrs={'id': re.compile(r"^http.*")}):
+    url = h.attrs["id"]
+    del h.attrs["id"]
+    links = soup.findAll("a", attrs={'href': url})
+    if len(links)>0:
+        count += 1
+        h.attrs["id"] = "mrk" + str(count)
+        mkr = "#" + h.attrs["id"]
+        for a in links:
+            a.attrs["href"] = mkr
+            if "target" in a.attrs:
+                del a.attrs["target"]
 
 for img in soup.findAll("img"):
     src = img.attrs["src"]
