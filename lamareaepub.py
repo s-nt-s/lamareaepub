@@ -19,6 +19,8 @@ parser.add_argument(
 parser.add_argument(
     '--apendices', help='Genera un capítulo de apendices con los conetenidos de los enlaces a www.lamarea.com', required=False, action="store_true")
 parser.add_argument(
+    '--recursivo', help='Esta opción combinada con --apendices busca apendices de manera recursiva', required=False, action="store_true")
+parser.add_argument(
     '--num', type=int, help='Número de la edicción')
 parser.add_argument(
     '--portada', help='URL a la portada del número')
@@ -33,6 +35,8 @@ tab = re.compile("^", re.MULTILINE)
 sp = re.compile("\s+", re.UNICODE)
 nonumb = re.compile("\D+")
 re_apendices = re.compile(r"^http://www.lamarea.com/2\d+/\d+/\d+/.*")
+re_scribd = re.compile(r"^(https://www.scribd.com/embeds/\d+)/.*")
+re_youtube = re.compile(r"https://www.youtube.com/embed/(.+?)\?.*")
 
 tag_concat = ['u', 'ul', 'ol', 'i', 'em', 'strong']
 tag_round = ['u', 'i', 'em', 'span', 'strong', 'a']
@@ -130,11 +134,53 @@ def get_enlaces(soup, hjs=[]):
             hjs.append(h)
     return hjs
 
+def get_title(url):
+    is_scribd = re_scribd.match(url)
+    if is_scribd:
+        url = url.replace("/embeds/","/doc/")
+    try:
+        html = br.open(url).read()
+        a=html.find('<title>')
+        if a>0:
+            a += 7
+            b=html.find('</title>', a)
+            title=sp.sub(" ",html[a:b]).strip()
+            return title
+    except:
+        pass
+    if is_scribd:
+        url = is_scribd.group(1)
+        url = url.replace("/embeds/","/doc/")
+    return url
+
 
 def limpiar(nodo):
     for s in nodo.findAll("span"):
         if "style" not in s.attrs:
             s.unwrap()
+
+    for i in nodo.findAll("iframe"):
+        src = i.attrs["src"]
+        busca_href = src
+        is_scribd = re_scribd.match(src)
+        is_youtube = re_youtube.match(src)
+        if is_scribd:
+            busca_href = is_scribd.group(1)
+            busca_href = busca_href.replace("/embeds/","/(doc|embeds)/")
+            busca_href = re.compile("^"+busca_href+"(/.*)?$")
+            src = src.replace("/embeds/","/doc/")
+        elif is_youtube:
+            busca_href = is_youtube.group(1)
+            src = "https://www.youtube.com/watch?v=" + busca_href
+            busca_href = re.compile("^https?://www.youtube.com/.*\b"+busca_href+"\b.*$")
+        if nodo.findAll("a", attrs={'href': busca_href}):
+            i.extract()
+        else:
+            i.name="a"
+            i.attrs.clear()
+            i.attrs["href"] = src
+            i.attrs["target"] = "_blank"
+            i.string=get_title(src)
 
     for i in nodo.findAll(block):
         if i.find("img"):
@@ -191,6 +237,19 @@ def limpiar2(nodo, url=None):
         if id and n.name in heads and id.startswith("http"):
             n.attrs["id"] = id
 
+def rutas(url, soup):
+    for a in soup.findAll(["a", "img", "iframe"]):
+        attr = "href" if a.name == "a" else "src"
+        href = a.attrs.get(attr, None)
+        if not href:
+            continue
+        if href.startswith("www."):
+            href = "http://" + href
+        else:
+            href = urljoin(url, href)
+        a.attrs[attr] = href
+
+
 class Pagina:
 
     def __init__(self, titulo, url, tipo=None):
@@ -216,6 +275,7 @@ class Pagina:
         if not tipo:
             page = br.open(url)
             soup = bs4.BeautifulSoup(page.read(), "lxml")
+            rutas(url, soup)
             art = soup.find("article")
             if not art:
                 hjs = get_enlaces(soup, hjs)
@@ -284,6 +344,7 @@ class Apendice:
         self.url = url
         self.articulo = None
         if self.titulo and self.content:
+            rutas(url, self.content)
             self.urls = [a.attrs["href"] for a in self.content.findAll("a", attrs={'href': re_apendices})]
             self.urls = sorted(list(set(self.urls)))
             self.titulo.attrs.clear()
@@ -328,8 +389,14 @@ class Apendice:
 
         self.articulo.append(a.content)
 
-        for img in self.articulo.findAll("img", attrs={'src': re.compile(r".*banner.*")}):
+        for img in self.articulo.findAll("img", attrs={'src': re.compile(r".*banner.*", re.IGNORECASE)}):
             img.extract()
+        img = self.soup.select("div.tagimagen img")
+        src=img[0].attrs.get("src", None) if len(img)>0 else None
+        if src:
+            for img in self.articulo.findAll("img", attrs={'src': src}):
+                img.extract()
+
         limpiar(self.articulo)
         limpiar2(self.articulo, self.url)
         for p in self.articulo.select("p"):
@@ -501,22 +568,26 @@ if arg.apendices:
 
     count = 0
     apendices = []
-    print "\nBuscando ápendices "
+    print "  APÉNDICES, buscando\r",
+    sys.stdout.flush()
     while count<len(urls):
-        sys.stdout.write('.')
+        print "  APÉNDICES, buscando" + ('.' * (count +1)) + "\r",
         sys.stdout.flush()
         slp = (count / 10) + (count % 2)
         time.sleep(slp)
         a = Apendice(urls[count])
         if a.isok():
             apendices.append(a)
-            for u in a.urls:
-                if u not in urls:
-                    urls.append(u)
+            if arg.recursivo:
+                for u in a.urls:
+                    if u not in urls:
+                        urls.append(u)
         count += 1
 
-    print ""
-    if len(apendices)>0:
+    if len(apendices)==0:
+        print "  APÉNDICES, no hay   " + (' ' * (count +1))
+    else:
+        print "  APÉNDICES           " + (' ' * (count +1))
         h = soup.new_tag("h1")
         h.string = "APÉNDICES"
         soup.body.append(h)
@@ -524,8 +595,8 @@ if arg.apendices:
         for a in apendices:
             soup.body.append(a.titulo)
             soup.body.append(a.build_articulo(soup))
-            print a.titulo.get_text()
-            print a.url
+            print "    " + a.titulo.get_text()
+            print "    " + a.url
 
 count = 0
 for h in soup.findAll(heads, attrs={'id': re.compile(r"^http.*")}):
