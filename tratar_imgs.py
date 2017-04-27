@@ -34,10 +34,10 @@ parser.add_argument('--out', help='Epub de salida', required=True)
 
 arg = parser.parse_args()
 
-if arg.debug and not os.isdir(arg.debug):
+if arg.debug and not os.path.isdir(arg.debug):
     sys.exit(arg.debug + " no es un directorio")
 if not arg.fuente.endswith(".html") or not os.path.isfile(arg.fuente):
-    sys.exit(arg.debug + " no es un fichero html")
+    sys.exit(arg.fuente + " no es un fichero html")
 if os.path.isfile(arg.epub):
     if not arg.epub.endswith(".epub"):
         sys.exit(arg.epub + " no es un epub")
@@ -51,20 +51,24 @@ elif not os.path.isdir(arg.epub):
 else:
     tmp_out = arg.epub
 
-ancho_defecto = 600 - 20
+ancho_defecto = 540 # 600 - 20
 ancho_anuncio = 400
 ancho_autor = 150
-ancho_portada = 1240
+ancho_grande = 1536 #1240
+ancho_gigante = 2048 #int(ancho_grande * 2)
 
 brillo_min = 60
 brillo_max = 255 - brillo_min
 
 mogrify = ["mogrify"]
+grey = ["-colorspace", "GRAY"]
+
+MB = 1048576
 
 if arg.trim:
     mogrify.extend(["-strip", "+repage", "-trim", "-fuzz", "600"])
 if arg.grey:
-    mogrify.extend(["-colorspace", "GRAY"])
+    mogrify.extend(grey)
 
 refile = re.compile(r"^file\d+\.[a-z]+$")
 
@@ -124,7 +128,6 @@ def composicion(im):
             ng += cnt
             cl += cnt
         tt += cnt
-
     return int(bl * 100 / tt), int(ng * 100 / tt), int(cl * 100 / tt), tt
 
 imgs = []
@@ -147,33 +150,46 @@ def optimizar(s):
     c = tmp_wks + os.path.basename(s)
     shutil.copy(s, c)
 
+    portada = not refile.match(nombre)
+
     resize = []
     if arg.resize:
-        if not refile.match(nombre):
-            resize = ["-resize", str(ancho_portada) + ">"]
+        if portada:
+            resize = ["-resize", str(ancho_grande) + ">"]
         elif s in anuncios:
             resize = ["-resize", str(ancho_anuncio) + ">"]
         elif s in autores:
             resize = ["-resize", str(ancho_autor) + ">"]
         else:
             blanco, negro, color, total = composicion(im)
-            if not ((blanco + negro) > 80 and blanco > 50):  # not grafica
+            if ((blanco + negro) > 80 and blanco > 70): # grafica
+                '''
+                resize = ["-resize", str(ancho_gigante) + ">"]
+                if antes > MB:
+                    resize = ["-resize", str(ancho_gigante) + ">"]
+                    if s.endswith(".jpg") or s.endswith(".jpeg"):
+                        resize.extend(["-quality", "60"])
+                        #resize.extend(["-define", "jpeg:extent=1024KB"])
+                '''
+            else:
                 resize = ["-resize", str(ancho_defecto) + ">"]
 
-    call(mogrify + resize + [c])
+    cmds = mogrify + resize + [c]
+
+    if arg.grey and portada:
+        cmds = [x for x in cmds if x not in grey]
+
+    call(cmds)
 
     despues = os.path.getsize(c)
 
     if arg.debug:
-        nombre = s[5:].replace("/", "_")
+        nombre = os.path.basename(s)
         nombre, extension = os.path.splitext(nombre)
-        nombre = arg.debug + nombre
+        nombre = arg.debug + arg.epub[8:10] + "_" + nombre
 
-        if antes > despues:
-            shutil.copy(s, nombre + "_A" + extension)
-            shutil.copy(c, nombre + "_B" + extension)
-        else:
-            shutil.copy(s, nombre + "_Z" + extension)
+        shutil.copy(s, nombre + "_" + extension)
+        shutil.copy(c, nombre + "_" + "_".join(cmds[1:-1]).replace(">","") + extension)
 
     if antes > despues:
         shutil.move(c, s)

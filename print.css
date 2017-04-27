@@ -16,3 +16,9 @@ figure figcaption {
 div.autor {
     font-size: 75%;
 }
+h1 {
+    text-align: center;
+}
+h2 {
+    margin-top: 0em;
+}
