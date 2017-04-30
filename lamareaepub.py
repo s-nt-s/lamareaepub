@@ -47,7 +47,7 @@ nb = re.compile("^\s*\d+\.\s+", re.UNICODE)
 
 heads = ["h1", "h2", "h3", "h4", "h5", "h6"]
 block = heads + ["p", "div", "table", "article"]
-inline = ["span", "strong", "b"]
+inline = ["span", "strong", "b", "del"]
 
 urls = ["#", "javascript:void(0)"]
 editorial = None

@@ -51,10 +51,10 @@ elif not os.path.isdir(arg.epub):
 else:
     tmp_out = arg.epub
 
-ancho_defecto = 540 # 600 - 20
+ancho_defecto = 544 # 600 - 20
 ancho_anuncio = 400
-ancho_autor = 150
-ancho_grande = 1536 #1240
+ancho_autor = 144
+ancho_grande = 720 # 1536 #1240
 ancho_gigante = 2048 #int(ancho_grande * 2)
 
 brillo_min = 60
@@ -62,11 +62,12 @@ brillo_max = 255 - brillo_min
 
 mogrify = ["mogrify"]
 grey = ["-colorspace", "GRAY"]
+trim = ["-strip", "+repage", "-fuzz", "600", "-trim"]
 
 MB = 1048576
 
 if arg.trim:
-    mogrify.extend(["-strip", "+repage", "-trim", "-fuzz", "600"])
+    mogrify.extend(trim)
 if arg.grey:
     mogrify.extend(grey)
 
@@ -163,8 +164,8 @@ def optimizar(s):
         else:
             blanco, negro, color, total = composicion(im)
             if ((blanco + negro) > 80 and blanco > 70): # grafica
-                '''
                 resize = ["-resize", str(ancho_gigante) + ">"]
+                '''
                 if antes > MB:
                     resize = ["-resize", str(ancho_gigante) + ">"]
                     if s.endswith(".jpg") or s.endswith(".jpeg"):
@@ -174,12 +175,12 @@ def optimizar(s):
             else:
                 resize = ["-resize", str(ancho_defecto) + ">"]
 
-    cmds = mogrify + resize + [c]
+    cmds = mogrify + resize
 
     if arg.grey and portada:
         cmds = [x for x in cmds if x not in grey]
 
-    call(cmds)
+    call(cmds + [c])
 
     despues = os.path.getsize(c)
 
