@@ -129,6 +129,9 @@ def get_enlaces(soup, hjs=[]):
         if h in noes:
             continue
         href = h.attrs["href"]
+        phref = urlparse(href)
+        if phref.path and phref.path.startswith("/tag/"):
+            continue
         txth = h.get_text().strip()
         if len(txth) > 0 and href not in urls and href not in hjs:
             hjs.append(h)
@@ -304,7 +307,7 @@ class Pagina:
 
     def reordenar_hijas(self):
         for i in range(len(self.hijas) - 1):
-            if self.hijas[i].titulo.lower() == "anuncios breves":
+            if self.hijas[i].titulo.lower() in ("anuncios breves", u"publicidad ética"):
                 self.hijas.append(self.hijas.pop(i))
                 return
 

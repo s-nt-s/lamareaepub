@@ -104,7 +104,7 @@ with open(arg.fuente, "rb") as f:
     soup = bs4.BeautifulSoup(f, "lxml")
     autores = [a.attrs["src"] for a in soup.select("div.autor img")]
     ab = soup.find("h2", text=re.compile(
-        r"^\s*anuncios\s+breves\s*$", re.UNICODE | re.MULTILINE | re.IGNORECASE))
+        r"^\s*(anuncios\s+breves|publicidad\s+.tica)\s*$", re.UNICODE | re.MULTILINE | re.IGNORECASE))
     ar = ab.find_next_sibling("article") if ab else None
     anuncios = [a.attrs["src"] for a in ar.select("img")] if ar else []
 
