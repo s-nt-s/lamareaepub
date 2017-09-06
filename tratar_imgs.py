@@ -60,9 +60,9 @@ ancho_gigante = 2048 #int(ancho_grande * 2)
 brillo_min = 60
 brillo_max = 255 - brillo_min
 
-mogrify = ["mogrify"]
+mogrify = ["mogrify", "-strip"]
 grey = ["-colorspace", "GRAY"]
-trim = ["-strip", "+repage", "-fuzz", "600", "-trim"]
+trim = ["+repage", "-fuzz", "600", "-trim"]
 
 MB = 1048576
 
@@ -76,6 +76,7 @@ refile = re.compile(r"^file\d+\.[a-z]+$")
 tmp_wks = tempfile.mkdtemp()
 media = tmp_out + "/media/"
 
+coord=re.compile(r"^(\d+)x(\d+)\+(\d+)\+(\d+)$")
 
 def descargar(url):
     dwn = tmp_wks + os.path.basename(url)
@@ -142,6 +143,30 @@ for i in range(len(anuncios)):
     a = igual(imgs, anuncios[i])
     anuncios[i] = a if a else None
 
+def optimizar_portada(img):
+    crop = []
+    if arg.trim:
+        crop1 = check_output(["convert", img] + ["+repage", "-gravity", "South", "-crop", "0%x50%+0+50%", "-fuzz", "600", "-format", "%@", "info:"])
+        crop2 = check_output(["convert", img] + ["+repage", "-fuzz", "600", "-format", "%@", "info:"])
+        crop1 = crop1.decode('utf-8')
+        crop2 = crop2.decode('utf-8')
+        a, _, c, _ = coord.findall(crop1)[0]
+        '''
+        c = str(int(c)-5)
+        a = str(int(a)+5)
+        '''
+        _, b, _, d = coord.findall(crop2)[0]
+        cropZ = a +'x' + b + '+' + c + '+' + d
+        crop = ["+repage", "-crop", cropZ]
+
+    cmds = ["mogrify", "-strip"] + crop
+    '''
+    if arg.grey:
+        cmds.extend(grey)
+    '''
+    if arg.resize:
+        cmds.extend(["-resize", str(ancho_grande) + ">"])
+    return cmds
 
 def optimizar(s):
     nombre = os.path.basename(s)
@@ -153,32 +178,29 @@ def optimizar(s):
 
     portada = not refile.match(nombre)
 
-    resize = []
-    if arg.resize:
-        if portada:
-            resize = ["-resize", str(ancho_grande) + ">"]
-        elif s in anuncios:
-            resize = ["-resize", str(ancho_anuncio) + ">"]
-        elif s in autores:
-            resize = ["-resize", str(ancho_autor) + ">"]
-        else:
-            blanco, negro, color, total = composicion(im)
-            if ((blanco + negro) > 80 and blanco > 70): # grafica
-                resize = ["-resize", str(ancho_gigante) + ">"]
-                '''
-                if antes > MB:
-                    resize = ["-resize", str(ancho_gigante) + ">"]
-                    if s.endswith(".jpg") or s.endswith(".jpeg"):
-                        resize.extend(["-quality", "60"])
-                        #resize.extend(["-define", "jpeg:extent=1024KB"])
-                '''
+    if portada:
+        cmds = optimizar_portada(c)
+    else:
+        resize = []
+        if arg.resize:
+            if s in anuncios:
+                resize = ["-resize", str(ancho_anuncio) + ">"]
+            elif s in autores:
+                resize = ["-resize", str(ancho_autor) + ">"]
             else:
-                resize = ["-resize", str(ancho_defecto) + ">"]
-
-    cmds = mogrify + resize
-
-    if arg.grey and portada:
-        cmds = [x for x in cmds if x not in grey]
+                blanco, negro, color, total = composicion(im)
+                if ((blanco + negro) > 80 and blanco > 70): # grafica
+                    resize = ["-resize", str(ancho_gigante) + ">"]
+                    '''
+                    if antes > MB:
+                        resize = ["-resize", str(ancho_gigante) + ">"]
+                        if s.endswith(".jpg") or s.endswith(".jpeg"):
+                            resize.extend(["-quality", "60"])
+                            #resize.extend(["-define", "jpeg:extent=1024KB"])
+                    '''
+                else:
+                    resize = ["-resize", str(ancho_defecto) + ">"]
+        cmds = mogrify + resize
 
     call(cmds + [c])
 
