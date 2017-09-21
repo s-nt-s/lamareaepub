@@ -39,8 +39,8 @@ re_apendices = re.compile(r"^http://www.lamarea.com/2\d+/\d+/\d+/.*")
 re_scribd = re.compile(r"^(https://www.scribd.com/embeds/\d+)/.*")
 re_youtube = re.compile(r"https://www.youtube.com/embed/(.+?)\?.*")
 
-tag_concat = ['u', 'ul', 'ol', 'i', 'em', 'strong']
-tag_round = ['u', 'i', 'em', 'span', 'strong', 'a']
+tag_concat = ['u', 'ul', 'ol', 'i', 'em', 'strong', 'b']
+tag_round = ['u', 'i', 'em', 'span', 'strong', 'a', 'b']
 tag_trim = ['li', 'th', 'td', 'div', 'caption', 'h[1-6]']
 tag_right = ['p']
 sp = re.compile("\s+", re.UNICODE)
@@ -48,7 +48,7 @@ nb = re.compile("^\s*\d+\.\s+", re.UNICODE)
 
 heads = ["h1", "h2", "h3", "h4", "h5", "h6"]
 block = heads + ["p", "div", "table", "article"]
-inline = ["span", "strong", "b", "del"]
+inline = ["span", "strong", "b", "del", "i", "em"]
 
 urls = ["#", "javascript:void(0)"]
 editorial = None
