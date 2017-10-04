@@ -35,7 +35,7 @@ rPortada = re.compile(
 tab = re.compile("^", re.MULTILINE)
 sp = re.compile("\s+", re.UNICODE)
 nonumb = re.compile("\D+")
-re_apendices = re.compile(r"^http://www.lamarea.com/2\d+/\d+/\d+/.*")
+re_apendices = re.compile(r"^https?://www.lamarea.com/2\d+/\d+/\d+/.*")
 re_scribd = re.compile(r"^(https://www.scribd.com/embeds/\d+)/.*")
 re_youtube = re.compile(r"https://www.youtube.com/embed/(.+?)\?.*")
 
