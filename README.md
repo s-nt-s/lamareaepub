@@ -2,26 +2,29 @@
 
 Por ello, este script genera un epub a partir de la versión del blog online.
 
-Para crear el epub se requieren dos pasos:
+Para crear el epub se requieren tener un fichero de configuración en formato YAML
+que contenga un documento por cada número de La Marea que se quiera pasar a epub.
 
-1- Lanzar `lamareaepub.py` de la siguiente manera:
+Ejemplo:
 
-```console
-$ python lamareaepub.py --usuario USER --clave PASS URL
+```yaml
+num: 60
+usuario: *********
+clave: ***********
+portada: http://www.revista.lamarea.com/wp-content/uploads/2018/04/01-Portada-LM60-1.jpg
+fecha: 2018-04-25
+titulo: Tiempos de clase
+---
+num: 61
+titulo: Una mirada pornográfica
+usuario: *********
+clave: ***********
+fecha: 2018-03-30
+portada: http://www.revista.lamarea.com/wp-content/uploads/2018/05/portada-1.jpg
 ```
 
-Donde USER y PASS son el usuario y clave que *La Marea* facilita a sus subscriptores para cada número, y URL es la dirección del blog online donde se alberga dicho número.
+y luego lanzar el script `lamareaepub.py` ( ver `lamareaepub.py --help` para más detalles )
 
-Esto generara un fichero `lamarea_XX.html`, donde `XX` es el número de esa edición, con el contenido preparado para ser pasado a epub.
+Esto básicamente generará un fichero `lamarea_XX.html` y `lamarea_XX.epub`, por cada número.
 
-Opcionalmente, si se ejecuta con el comando `--apendices` se generará un capitulo adicional llamado *APÉNDICES* que incluirá los artículos de http://www.lamarea.com/ que hubieran sido referenciados en el número.
-
-2- Lanzar `miepub`
-
-`miepub.py` es un script que se puede obtener aquí https://github.com/s-nt-s/miepub (requiere [`pandoc 1.19.2`](https://github.com/jgm/pandoc/releases) o mayor) y que ejecutandolo así:
-
-```console
-$ ./miepub.py lamarea_XX.html
-```
-
-creará el epub con el nombre `lamarea_XX.epub`
+Este script hace uso del comando `miepub`, que es a su vez un script que se puede obtener en https://github.com/s-nt-s/miepub (requiere [`pandoc 1.19.2`](https://github.com/jgm/pandoc/releases) o mayor).
