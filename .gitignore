@@ -1,7 +1,6 @@
 *.txt
 *.epub
 *.html
-*.bak
-*.sh
-out
-tmp
+*.yml
+*.txt
+__pycache__

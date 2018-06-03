@@ -1,0 +1,42 @@
+@page {
+	margin-bottom: 5pt;
+	margin-top: 5pt
+}
+img {
+	max-width:100%;
+}
+figure {
+    display: inline-block;
+    margin: 0px;
+}
+figure figcaption {
+    font-size: 75%;
+    text-align: center;
+}
+div.autor {
+    font-size: 75%;
+}
+h1 {
+    text-align: center;
+}
+h2 {
+    margin-top: 0em;
+}
+a.local {
+    text-decoration: none;
+    border-bottom: 1px blue dotted;
+}
+div.autor.conimg > div {
+    display:inline;
+}
+div.autor.conimg > div.nombre {
+    display:block;
+    margin-bottom: 6px;
+}
+div.autor.conimg {
+    overflow: auto;
+}
+div.autor.conimg img {
+    float:left;
+    margin-right: 1em;
+}
