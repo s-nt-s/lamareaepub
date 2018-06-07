@@ -11,7 +11,7 @@ from os.path import splitext
 rPortada = re.compile(r'"body_bg"\s*:\s*"\s*([^"]+)\s*"', re.IGNORECASE)
 tab = re.compile("^", re.MULTILINE)
 nonumb = re.compile("\D+")
-re_apendices = re.compile(r"^https?://www.lamarea.com/2\d+/\d+/\d+/.*")
+re_apendices = re.compile(r"^https?://(.*.)?\blamarea.com/.+/.+")
 re_scribd = re.compile(r"^(https://www.scribd.com/embeds/\d+)/.*")
 re_youtube = re.compile(r"https://www.youtube.com/embed/(.+?)\?.*")
 
@@ -211,17 +211,14 @@ def limpiar(nodo):
                     if len(tds)==1:
                         tds[0].attrs["colspan"] = m_tds
 
-def limpiar2(nodo, url=None):
+def limpiar2(nodo):
     for img in nodo.select("a > img"):
         a = img.parent
         if len(a.get_text().strip()) == 0:
             href = a.attrs["href"]
             src = img.attrs["src"]
-            if url:
-                hrf = urljoin(url, href)
-                src = urljoin(url, src)
-                if urlparse(hrf).netloc != urlparse(src).netloc:
-                    continue
+            if urlparse(href).netloc != urlparse(src).netloc:
+                continue
             _, ext1 = splitext(urlparse(href).path)
             _, ext2 = splitext(urlparse(src).path)
             if ext1 in (".pdf",):
@@ -264,11 +261,21 @@ def build_soup(url, response):
         text = text.replace('<b>6.Impuestos: <span style="font-weight: 400;">', '<strong>6.Impuestos</strong>:'+rpl)
         text = text.replace('<strong>7.Interconexiones:</strong>', '<strong>7.Interconexiones</strong>:')
 
+    if url == "http://www.revista.lamarea.com/enrique-murillo-posible-incompatibilidad-para-responder-al-cuestionario/":
+        rpl = "La beca me permitió dejar de traducir todas las mañanas y todos los fines de semana (por las tardes hacia trabajillos en Anagrama) y en tres meses terminar el primer borrador de una novela que se publicó en 1987 con el título de <i>El centro del mundo</i>. "
+        if text.count(rpl)>1:
+            text = text.replace(rpl, "", 1)
+
     soup = bs4.BeautifulSoup(text, "lxml")
     
     for unwrapme in soup.select(".unwrapme"):
         unwrapme.unwrap()
     for extractme in soup.select(".extractme"):
         extractme.extract()
+
+    rutas(url, soup)
+
+    for img in soup.findAll("img", attrs={'src': re.compile(r".*(la-marea-\d+x\d+|bannercilli|LM_aportacion_\d+x\d+)\.(gif|jpg).*")}):
+        img.extract()
 
     return soup

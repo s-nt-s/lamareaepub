@@ -7,6 +7,7 @@ import sys
 import time
 from urllib.parse import urljoin, urlparse
 from .util import get_tpt, get_title, limpiar, limpiar2, rutas, heads, tab, rPortada, sp, re_apendices, build_soup, get_html
+from datetime import datetime
 
 default_headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:54.0) Gecko/20100101 Firefox/54.0',
@@ -80,7 +81,6 @@ class Pagina:
         art = None
         if not tipo:
             soup = self.root.get(url)
-            rutas(url, soup)
             art = soup.find("article")
             if not art:
                 hjs = get_enlaces(soup, hjs=hjs, urls=self.root.urls)
@@ -216,9 +216,6 @@ class LaMarea():
         for div in soup.select("div.eltd-post-image-area"):
             div.extract()
 
-        for i in soup.findAll(["b"]):
-            i.unwrap()
-
         limpiar(soup)
 
         autores = []
@@ -251,8 +248,6 @@ class LaMarea():
                             h.name = "h" + str(a)
                     ct.append(c)
 
-            for img in art.findAll("img", attrs={'src': re.compile(r".*la-marea-250x250\.jpg.*")}):
-                img.extract()
             auth = art.find("div", attrs={'class': "saboxplugin-wrap"})
             if not auth:
                 auth = art.find("div", attrs={'class': "saboxplugin-authorname"})
@@ -323,8 +318,8 @@ class LaMarea():
             sys.stdout.flush()
             slp = (count / 10) + (count % 2)
             time.sleep(slp)
-            a = Apendice(urls[count])
-            if a.isok():
+            a = get_apendice(urls[count])
+            if a and a.isok():
                 apendices.append(a)
                 if False: #arg.recursivo:
                     for u in a.urls:
@@ -344,7 +339,7 @@ class LaMarea():
             h = soup.new_tag("h1")
             h.string = "APÉNDICES"
             contenedor.append(h)
-            apendices = sorted(apendices, key=lambda k: k.url) 
+            apendices = sorted(apendices, key=lambda k: k.date) 
             for a in apendices:
                 self.heads.append((a.titulo, a.url))       
                 contenedor.append(a.titulo)
@@ -419,86 +414,138 @@ class LaMarea():
                     cl.append("grafica")
                 img.attrs["class"] = cl
 
+        for div in soup.select("article > div"):
+            if not div.attrs:
+                div.unwrap()
+
         return soup
 
 class Apendice:
-    
     def __init__(self, url):
         r = requests.get(url, headers=default_headers)
         self.soup = build_soup(url, r)
-        self.titulo = self.soup.find("h2", attrs={'id': "titulo"})
-        self.content = self.soup.find("div", attrs={'class': "shortcode-content"})
+        self.titulo = None
+        self.content = None
+        self.date = None
         self.url = url
-        self.articulo = None
-        if self.titulo and self.content:
-            rutas(url, self.content)
-            self.urls = [a.attrs["href"] for a in self.content.findAll("a", attrs={'href': re_apendices})]
-            self.urls = sorted(list(set(self.urls)))
-            self.titulo.attrs.clear()
-            self.titulo.attrs["id"] = url
-            self.articulo = self.build_articulo()
+        r = requests.get(url, headers=default_headers)
+        self.soup = build_soup(url, r)
+        dt = self.soup.find("meta", attrs={"property":"article:published_time"})
+        if dt:
+            dt = dt.attrs["content"]
+            self.date = datetime.strptime(dt[:22] + dt[23:], '%Y-%m-%dT%H:%M:%S%z') # 2018-04-02T11:37:52+00:00
 
     def isok(self):
-        return self.titulo and self.content
+        if not self.date and not self.titulo or not self.content:
+            return False
+        if self.content.find("strong", text=re.compile(r"^\s*Art\S+culo\s+incluido\s+en\s+el\s+dossier.*")):
+            return False
+        return True
 
-    def build_articulo(self):
-        self.articulo = self.soup.new_tag("article")
-        self.articulo.attrs["data-src"] = self.url
-        ap = self.soup.new_tag("p")
+    @property
+    def urls(self):
+        urls = [a.attrs["href"] for a in self.content.findAll("a", attrs={'href': re_apendices})]
+        return sorted(set(self.urls))
         
-        ia = self.soup.select("div.article-controls div.infoautor a")
+    @property
+    def articulo(self):
+        if not self.isok():
+            return None
+        self.titulo.attrs.clear()
+        self.titulo.attrs["id"] = self.url
+        return self.get_articulo()
+        
+    def get_articulo(self):
+        return None
+
+class ApendiceApuntes(Apendice):
+
+    def __init__(self, url):
+        Apendice.__init__(self, url)
+        self.titulo = self.soup.find("h1")
+        self.content = self.soup.find("div", attrs={'class': "entry-content"})
+
+    def get_articulo(self):
+        articulo = self.soup.new_tag("article")
+        articulo.attrs["data-src"] = self.url
+        ap = self.soup.new_tag("p")
+
+        ia = self.soup.select("span.entry-author-name")
         if len(ia) > 0:
             ia = ia[0]
             ia.attrs.clear()
             ia.name = "strong"
             ap.append(ia)
-        cf = self.soup.find("div", attrs={'class': "calendar-full"})
-        if cf:
-            ap.append(" " + sp.sub(" ", cf.get_text()).strip())
+
+        ap.append(" " + self.date.strftime("%d-%m-%Y"))
         if len(sp.sub(" ", ap.get_text().strip())) > 0:
-            self.articulo.append(ap)
-        e = None  # self.soup.find("div",attrs={'class': "except"})
+            articulo.append(ap)
+        e = self.soup.find("div",attrs={'class': "except"})
         if e:
-            self.articulo.append(e)
-        for i in self.soup.findAll("div", attrs={'class': "article-photo"}):
-            nex = i.next_sibling
-            while nex and not nex.name:
-                nex = nex.next_sibling
-            if nex and nex.name == "div" and "class" in nex.attrs and "article-photo-foot" in nex.attrs["class"]:
-                nex.name = "p"
-                i.append(nex)
-            img = i.find("img")
-            if not img or "src" not in img.attrs or img.attrs["src"] == "":
-                i.extract()
-                continue
-            self.articulo.append(i)
+            txt1 = re.sub(r"\W", "", sp.sub(" ", e.get_text()).strip())
+            txt2 = re.sub(r"\W", "", sp.sub(" ", self.content.get_text()).strip())
+            if txt1 not in txt2:
+                articulo.append(e)
+        img = self.soup.findAll("figure.single-post-image")
+        if len(img)>0:
+            img=img[0]
+            articulo.append(img)
 
-        self.articulo.append(self.content)
+        articulo.append(self.content)
 
-        for img in self.articulo.findAll("img", attrs={'src': re.compile(r".*(banner|LM_aportacion_.*\.gif).*", re.IGNORECASE)}):
-            img.extract()
-        img = self.soup.select("div.tagimagen img")
-        src=img[0].attrs.get("src", None) if len(img)>0 else None
-        if src:
-            for img in self.articulo.findAll("img", attrs={'src': src}):
-                img.extract()
+        limpiar(articulo)
+        limpiar2(articulo)
 
-        limpiar(self.articulo)
-        limpiar2(self.articulo, self.url)
-        for p in self.articulo.select("p"):
-            if p.find("img") and p.find("span"):
-                div = self.soup.new_tag("div")
-                for img in p.findAll("img"):
-                    div.append(img)
-                s = self.soup.new_tag("p")
-                s.string = p.get_text()
-                div.append(s)
-                p.replaceWith(div)
-        for div in self.articulo.select("div"):
-            if "style" not in div.attrs and not div.select("img"):
-                div.unwrap()
+        return articulo
+    
+class ApendiceMarea(Apendice):
+    
+    def __init__(self, url):
+        Apendice.__init__(self, url)
+        self.titulo = self.soup.find("h2", attrs={'id': "titulo"})
+        self.content = self.soup.find("div", attrs={'class': "shortcode-content"})
 
-        return self.articulo
+    def get_articulo(self):
+        articulo = self.soup.new_tag("article")
+        articulo.attrs["data-src"] = self.url
+        ap = self.soup.new_tag("p")
+
+        ia = self.soup.select("div.infoautor a.icon-link")
+        if len(ia) > 0:
+            ia = ia[0]
+            ia.attrs.clear()
+            ia.name = "strong"
+            ap.append(ia)
+    
+        ap.append(" " + self.date.strftime("%d-%m-%Y"))
+        if len(sp.sub(" ", ap.get_text().strip())) > 0:
+            articulo.append(ap)
+        e = self.soup.find("div",attrs={'class': "except"})
+        if e:
+            txt1 = re.sub(r"\W", "", sp.sub(" ", e.get_text()).strip())
+            txt2 = re.sub(r"\W", "", sp.sub(" ", self.content.get_text()).strip())
+            if txt1 not in txt2:
+                articulo.append(e)
+        img = self.soup.findAll("figure.single-post-image")
+        if len(img)>0:
+            img=img[0]
+            articulo.append(img)
+
+        articulo.append(self.content)
+
+        limpiar(articulo)
+        limpiar2(articulo)
+
+        return articulo
+
+def get_apendice(url):
+    dom = urlparse(url).netloc
+    if dom in ("www.lamarea.com", "lamarea.com"):
+        return ApendiceMarea(url)
+    elif dom == "apuntesdeclase.lamarea.com":
+        return ApendiceApuntes(url)
+    return None
+    
 
 def tune_html_for_epub(html_file, *args):
     with open(html_file, "r") as f:
@@ -519,6 +566,17 @@ def tune_html_for_epub(html_file, *args):
         if not soup.find(heads, attrs={'id': mrk}):
             a.attrs["href"] = a.attrs["data-href"]
             del a.attrs["class"]
+
+    for a in soup.findAll("a"):
+        href = a.attrs["href"]
+        if not href.startswith("#"):
+            dom = urlparse(href).netloc
+            dom = re.sub("^www\.|:\d+$", "", dom)
+            if dom not in a.get_text():
+                small = soup.new_tag("small")
+                small.string = "[" + dom + "]"
+                a.append(" ")
+                a.append(small)
 
     for n in soup.select("*"):
         if n.attrs:

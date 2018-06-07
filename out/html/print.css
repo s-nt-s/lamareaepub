@@ -22,10 +22,6 @@ h1 {
 h2 {
     margin-top: 0em;
 }
-a.local {
-    text-decoration: none;
-    border-bottom: 1px blue dotted;
-}
 div.autor.conimg > div {
     display:inline;
 }
