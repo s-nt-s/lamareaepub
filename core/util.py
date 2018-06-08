@@ -70,7 +70,7 @@ def get_html(soup):
     return h
 
 
-def get_tpt(title, img):
+def get_tpt(title, img, num):
     soup = bs4.BeautifulSoup('''
 	<!DOCTYPE html>
 	<html lang="es">
@@ -83,11 +83,12 @@ def get_tpt(title, img):
 			<meta content="La Marea" name="DC.creator" />
 			<meta content="MásPúblico" name="DC.publisher" />
 			<meta content="Creative Commons BY/SA 3.0" name="DC.rights" />
+			<meta name="ebook-meta" content='-s "La Marea" -i %s' />
 		</head>
 		<body>
 		</body>
 	</html>
-	''' % (title, img)
+	''' % (title, img, num)
         , 'lxml')
     return soup
 

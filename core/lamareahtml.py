@@ -129,7 +129,7 @@ class Pagina:
             return self.articulo
 
         if self.tipo == 0:
-            soup = get_tpt(self.titulo, self.url)
+            soup = get_tpt(self.titulo, self.url, self.root.config.num)
 
         div = soup.new_tag("div")
         for i in self.hijas:
@@ -480,7 +480,7 @@ class ApendiceApuntes(Apendice):
         ap.append(" " + self.date.strftime("%d-%m-%Y"))
         if len(sp.sub(" ", ap.get_text().strip())) > 0:
             articulo.append(ap)
-        e = self.soup.find("div",attrs={'class': "except"})
+        e = None #self.soup.find("div",attrs={'class': "except"})
         if e:
             txt1 = re.sub(r"\W", "", sp.sub(" ", e.get_text()).strip())
             txt2 = re.sub(r"\W", "", sp.sub(" ", self.content.get_text()).strip())
@@ -520,7 +520,7 @@ class ApendiceMarea(Apendice):
         ap.append(" " + self.date.strftime("%d-%m-%Y"))
         if len(sp.sub(" ", ap.get_text().strip())) > 0:
             articulo.append(ap)
-        e = self.soup.find("div",attrs={'class': "except"})
+        e = None #self.soup.find("div",attrs={'class': "except"})
         if e:
             txt1 = re.sub(r"\W", "", sp.sub(" ", e.get_text()).strip())
             txt2 = re.sub(r"\W", "", sp.sub(" ", self.content.get_text()).strip())
