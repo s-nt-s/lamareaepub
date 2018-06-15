@@ -149,7 +149,7 @@ def limpiar(nodo):
         else:
             i2 = i.select(" > " + i.name)
             if len(i2) == 1:
-                txt2 = sp.sub("", i2[0].get_text().strip())
+                txt2 = sp.sub("", i2[0].get_text()).strip()
                 if txt == txt2:
                     i.unwrap()
 

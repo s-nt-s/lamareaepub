@@ -220,9 +220,9 @@ class LaMarea():
 
         autores = []
         autores_nombres = []
-
+        
         for art in soup.select("article"):
-            art.find("div").unwrap()
+            #art.find("div").unwrap()
             cabs = []
             nivel = int(art.attrs["nivel"])
             hcab = ["h" + str(i) for i in range(nivel, 7)]
@@ -248,10 +248,9 @@ class LaMarea():
                             h.name = "h" + str(a)
                     ct.append(c)
 
-            auth = art.find("div", attrs={'class': "saboxplugin-wrap"})
-            if not auth:
-                auth = art.find("div", attrs={'class': "saboxplugin-authorname"})
-            if auth:
+            auth = art.select("div.saboxplugin-wrap, div.saboxplugin-authorname")
+            if len(auth)>0:
+                auth = auth[0]
                 aut = sp.sub(" ", auth.get_text().strip())
                 if aut == "La Marea":
                     auth.extract()
@@ -266,7 +265,7 @@ class LaMarea():
                             a.string = aut
                     for b in auth.select("br"):
                         b.extract()
-
+                        
         limpiar2(soup)
         for a in soup.findAll("article"):
             n1 = a.select("> *")[0]
@@ -278,6 +277,7 @@ class LaMarea():
                 auth.attrs["class"] = "autor conimg".split()
             else:
                 auth.attrs["class"] = "autor sinimg".split()
+            #print (auth)
             nb = auth.find("strong")
             dv = nb.parent
             if dv and dv.name == "div" and dv != auth and sp.sub(" ", nb.get_text()).strip() == sp.sub(" ", dv.get_text()).strip():
@@ -413,6 +413,7 @@ class LaMarea():
                 else:
                     cl.append("grafica")
                 img.attrs["class"] = cl
+
 
         for div in soup.select("article > div"):
             if not div.attrs:
@@ -553,7 +554,7 @@ def tune_html_for_epub(html_file, *args):
 
     extract = ".noepub"
     if args:
-       extract +  ", #" + (", #".join(args))
+       extract = extract +  ", #" + (", #".join(args))
 
     for noepup in soup.select(extract):
         noepup.extract()
