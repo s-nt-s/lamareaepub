@@ -90,6 +90,7 @@ for html_file in sorted(glob(html_dir+"*.html")):
         epub = tempfile.NamedTemporaryFile(suffix='.epub', delete=True).name
         run(["miepub", "--chapter-level", "2", "--out", epub, html_tune]) #, stdout=DEVNULL)
 
+        #print(html_tune)
         os.remove(html_tune)
         
         print("")

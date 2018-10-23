@@ -7,6 +7,7 @@ img {
 }
 figure {
     display: inline-block;
+    text-align: center;
     margin: 0px;
 }
 figure figcaption {
@@ -35,4 +36,10 @@ div.autor.conimg {
 div.autor.conimg img {
     float:left;
     margin-right: 1em;
+}
+
+img.imagensola {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }

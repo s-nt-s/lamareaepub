@@ -243,7 +243,7 @@ def rutas(url, soup):
     for a in soup.findAll(["a", "img", "iframe"]):
         attr = "href" if a.name == "a" else "src"
         href = a.attrs.get(attr, None)
-        if not href:
+        if not href or href.startswith("data:image/"):
             continue
         if href.startswith("www."):
             href = "http://" + href
@@ -267,6 +267,9 @@ def build_soup(url, response):
         if text.count(rpl)>1:
             text = text.replace(rpl, "", 1)
 
+    if url == "http://www.revista.lamarea.com/las-dos-caras-de-diez-anos-de-crisis/":
+        text = text.replace('<p><strong>CARA B</strong></p>', '<h3>CARA B</h3>')
+
     soup = bs4.BeautifulSoup(text, "lxml")
     
     for unwrapme in soup.select(".unwrapme"):
@@ -276,7 +279,11 @@ def build_soup(url, response):
 
     rutas(url, soup)
 
-    for img in soup.findAll("img", attrs={'src': re.compile(r".*(la-marea-\d+x\d+|bannercilli|LM_aportacion_\d+x\d+)\.(gif|jpg).*")}):
-        img.extract()
+    for img in soup.findAll("img", attrs={'src': re.compile(r".*(la-marea-\d+x\d+|bannercilli|bannernewsletter|LM_aportacion_\d+x\d+)\.(gif|jpg).*")}):
+        p = img.find_parent("p")
+        if p and not sp.sub("",p.get_text()).strip():
+            p.extract()
+        else:
+            img.extract()
 
     return soup

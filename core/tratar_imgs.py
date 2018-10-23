@@ -148,6 +148,9 @@ def optimizar(arg, mogrify, autores, graficas, s):
             else:
                 resize = ["-resize", str(ancho_defecto) + ">"]
         cmds = mogrify + resize
+        quality = int(check_output(["identify", "-format", "%Q", s]))
+        if quality>75:
+            cmds = cmds + ["-quality", "75"]
 
     if grafica:
         cmds = [c for c in cmds if c not in grey]
@@ -209,7 +212,7 @@ def tune_epub(arg):
                 graficas.add(tmp_out+"/"+i.attrs["src"])
         
     imgs = []
-    for g in ['*.jpeg', '*.jpg', '*.png']:
+    for g in ('*.jpeg', '*.jpg', '*.png'):
         imgs.extend(glob.glob(media + g))
 
     print ("Limpiando imagenes")

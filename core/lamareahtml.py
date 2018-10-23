@@ -22,6 +22,14 @@ default_headers = {
     'Upgrade-Insecure-Requests': '1',
 }
 
+def add_class(node, class_name):
+    cl = node.attrs.get("class", "")
+    if isinstance(cl, str):
+        cl = (cl +" "+class_name).strip()
+    else:
+        cl.append(class_name)
+    node.attrs["class"] = cl
+
 def get_enlaces(soup, hjs=None, urls=None):
     if hjs is None:
         hjs = []
@@ -407,13 +415,15 @@ class LaMarea():
 
         for img in soup.findAll("img"):
             if img.attrs["src"] in self.config.graficas:
-                cl = img.attrs.get("class", "")
-                if isinstance(cl, str):
-                    cl = (cl +" grafica").strip()
-                else:
-                    cl.append("grafica")
-                img.attrs["class"] = cl
+                add_class(img, "grafica")
 
+        for p in soup.findAll("p"):
+            img = p.findAll("img")
+            if len(img)==1:
+                txt = sp.sub(" ", p.get_text()).strip()
+                if len(txt)==0:
+                    img = img[0]
+                    add_class(img, "imagensola")
 
         for div in soup.select("article > div"):
             if not div.attrs:
