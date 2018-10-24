@@ -319,14 +319,19 @@ class LaMarea():
 
         count = 0
         apendices = []
+        spaces = 1
         print ("  APÉNDICES, buscando", end="\r")
         sys.stdout.flush()
         while count<len(urls):
-            print ("  APÉNDICES, buscando" + ('.' * (count +1)), end="\r")
+            print (" " * (30 + spaces), end="\r")
+            print ("  APÉNDICES, buscando [%s]" % (count,), end="\r")
             sys.stdout.flush()
             slp = (count / 10) + (count % 2)
             time.sleep(slp)
-            a = get_apendice(urls[count])
+            a_url = urls[count]
+            spaces = len(a_url)
+            print ("  APÉNDICES, buscando [%s] %s" % (count, a_url), end="\r")
+            a = get_apendice(a_url)
             if a and a.isok():
                 apendices.append(a)
                 if False: #arg.recursivo:
@@ -335,6 +340,7 @@ class LaMarea():
                             urls.append(u)
             count += 1
 
+        print (" " * (30 + spaces), end="\r")
         if len(apendices)==0:
             print ("  APÉNDICES, no hay   " + (' ' * (count +1)))
         else:

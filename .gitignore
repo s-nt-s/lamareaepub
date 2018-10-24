@@ -1,6 +1,5 @@
 *.txt
-*.epub
-*.html
 *.yml
 *.txt
 __pycache__
+out/*

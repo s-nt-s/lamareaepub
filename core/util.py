@@ -14,6 +14,7 @@ nonumb = re.compile("\D+")
 re_apendices = re.compile(r"^https?://(.*.)?\blamarea.com/.+/.+")
 re_scribd = re.compile(r"^(https://www.scribd.com/embeds/\d+)/.*")
 re_youtube = re.compile(r"https://www.youtube.com/embed/(.+?)\?.*")
+re_banner = re.compile(r".*(la-marea-\d+x\d+|bannercilli|bannernewsletter|LM_aportacion_\d+x\d+)\.(gif|jpg).*")
 
 tag_concat = ['u', 'ul', 'ol', 'i', 'em', 'strong', 'b']
 tag_round = ['u', 'i', 'em', 'span', 'strong', 'a', 'b']
@@ -270,6 +271,9 @@ def build_soup(url, response):
     if url == "http://www.revista.lamarea.com/las-dos-caras-de-diez-anos-de-crisis/":
         text = text.replace('<p><strong>CARA B</strong></p>', '<h3>CARA B</h3>')
 
+    if url == "http://www.revista.lamarea.com/el-revuelo-sobre-la-tesis-de-sanchez-tambien-revela-la-perversion-de-la-prensa/":
+        text = text.replace('la calidad del trabaj</p>\n<p>o no era de excelencia', 'la calidad del trabajo no era de excelencia')
+
     soup = bs4.BeautifulSoup(text, "lxml")
     
     for unwrapme in soup.select(".unwrapme"):
@@ -279,11 +283,14 @@ def build_soup(url, response):
 
     rutas(url, soup)
 
-    for img in soup.findAll("img", attrs={'src': re.compile(r".*(la-marea-\d+x\d+|bannercilli|bannernewsletter|LM_aportacion_\d+x\d+)\.(gif|jpg).*")}):
-        p = img.find_parent("p")
-        if p and not sp.sub("",p.get_text()).strip():
-            p.extract()
-        else:
-            img.extract()
+    for img in soup.findAll("img"):
+        if "src" not in img.attrs or img.attrs["src"].startswith("data:"):
+            continue
+        if re_banner.search(img.attrs["src"]):
+            p = img.find_parent("p")
+            if p and not sp.sub("",p.get_text()).strip():
+                p.extract()
+            else:
+                img.extract()
 
     return soup
