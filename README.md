@@ -8,19 +8,19 @@ que contenga un documento por cada número de La Marea que se quiera pasar a epu
 Ejemplo:
 
 ```yaml
-num: 60
-usuario: *********
-clave: ***********
-portada: http://www.revista.lamarea.com/wp-content/uploads/2018/04/01-Portada-LM60-1.jpg
-fecha: 2018-04-25
-titulo: Tiempos de clase
+num: 47
+usuario: ******
+clave: ********
+portada: http://www.revista.lamarea.com/wp-content/uploads/2017/02/LM_Portada047_RGB.jpg
+titulo: Nos dejan sin palabras
+fecha: 2017-02-22
 ---
-num: 61
-titulo: Una mirada pornográfica
-usuario: *********
-clave: ***********
-fecha: 2018-03-30
-portada: http://www.revista.lamarea.com/wp-content/uploads/2018/05/portada-1.jpg
+num: 48
+usuario: ******
+clave: ********
+portada: http://www.revista.lamarea.com/wp-content/uploads/2017/04/LM_Portada048.jpg
+fecha: 2017-03-29
+titulo: Los plasmas del IBEX35
 ```
 
 y luego lanzar el script `lamareaepub.py` ( ver `lamareaepub.py --help` para más detalles )
