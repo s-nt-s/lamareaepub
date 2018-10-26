@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>La Marea</title>
+		<title>La Marea en EPUB</title>
 		<link href="rec/main.css" rel="stylesheet" type="text/css"/>
 		<meta charset="utf-8"/>
 	</head>
 	<body>
         <h1>Números de La Marea</h1>
         {% for num, meta in data.items()|sort(reverse = True) %}
-            <div class="num" id="m{{num}}">
+            <div class="item" id="m{{num}}">
                 <div class="info">
                     <span class="numero">#{{num}}</span>
                     <span class="fecha">{{meta.publication_date | my_date}}</span>
-                    <a href="epub/lamarea_{{num}}.epub">EPUB</a>
-                    <a href="html/lamarea_{{num}}.html" target="_blank">HTML</a>
+                    <a class="epub" href="epub/lamarea_{{num}}.epub" title="EPUB #{{num}}, {{meta.file_size_in_bytes | bytes_to_mbs }}">EPUB</a>
+                    <a class="html" href="html/lamarea_{{num}}.html" target="_blank" title="HTML #{{num}}, {{meta.html_size_in_bytes | bytes_to_mbs }}">HTML</a>
                 </div>
                 <div class="content">
                     <h2 class="title" title="{{meta.title | my_title }}">{{meta.title | my_title }}</h2>

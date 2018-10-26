@@ -6,35 +6,35 @@ h1 {
   position: absolute;
   left: -900px;
 }
-div.num {
+div.item {
   float: left;
   margin: 5px;
 }
-div.num > div {
+div.item > div {
   float: left;
 }
-div.num > div.info > * {
+div.item > div.info > * {
   display: block;
   margin-bottom: 5px;
   
 }
-div.num > div.info {
+div.item > div.info {
   background-color: lightgray;
-  text-align: right;
+  text-align: center;
   border: 2px solid black;
   padding: 10px;
   border-radius: 5px;
   font-family: monospace;
 }
-div.num > div.content {
+div.item > div.content {
   padding: 5px;
   width: 250px;
-  height: 350px;
   overflow: hidden;
   /*position: relative;*/
 }
-div.num > div.content > h2 {
+div.item > div.content > h2 {
   margin-top: 0px;
+  margin-bottom: 8px;
   white-space: nowrap;
   /*overflow-x: auto;*/
   overflow-x: hidden;
@@ -43,9 +43,21 @@ div.num > div.content > h2 {
 }
 span.numero {
   font-weight: bold;
+  font-size: 2em;
+  text-align: center;
+}
+a {
+  text-decoration: none !important;:
+}
+a.epub {
+  font-weight: bold;
+  font-size: 1.5em;
+}
+a.html {
+  display: none !important;;
 }
 /*
-div.num > div.content > div.cover {
-  top: 3em;
+div.item > div.content > div.cover {
+  margin-left: 0em;
 }
 */

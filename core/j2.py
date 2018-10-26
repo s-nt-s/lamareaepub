@@ -3,9 +3,17 @@ import os
 from jinja2 import Environment, FileSystemLoader
 
 
-def my_date(d):
-    y, m, _ = d.split("-", 2)
+def my_date(dt):
+    y, m, d = dt.split("-", 2)
+    d, _ = d.split("T", 1)
+    d=int(d)
     m=int(m)
+    y=int(y[2:])
+    if d>18:
+        m=m+1
+    if m == 13:
+        m = 1
+        y = y + 1
     if m==1:
         m="ene"
     elif m==2:
@@ -30,11 +38,19 @@ def my_date(d):
         m="nov"
     elif m==12:
         m="dic"
-    return m+"-"+y[2:]
+    return m+"-"+str(y)
 
 def my_title(t):
     _, t = t.split(": ",1)
     return t
+
+def bytes_to_mbs(b):
+    if isinstance(b, str):
+        return b
+    mb = b / 1024 / 1024
+    mb = "%.1f MB" % mb
+    mb = mb.replace(".0","")
+    return mb
 
 class Jnj2():
 
@@ -43,6 +59,7 @@ class Jnj2():
             loader=FileSystemLoader(origen), trim_blocks=True)
         self.j2_env.filters['my_date'] = my_date
         self.j2_env.filters['my_title'] = my_title
+        self.j2_env.filters['bytes_to_mbs'] = bytes_to_mbs
         self.destino = destino
         self.pre = pre
         self.post = post
