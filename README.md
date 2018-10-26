@@ -1,4 +1,4 @@
-*[La Marea](http://www.lamarea.com/)* ofrece a sus [subscriptores](http://www.lamarea.com/kiosco/#!/D011-La-Marea-n%C2%BA-47/p/80130070/category=5355224) su edición mensual en formato papel, pdf o blog online, pero actualmente no dispone de una versión en epub.
+*[La Marea](http://www.lamarea.com/)* ofrece a sus [subscriptores](http://www.lamarea.com/kiosco) su edición mensual en formato papel, pdf o blog online, pero actualmente no dispone de una versión en epub.
 
 Por ello, este script genera un epub a partir de la versión del blog online.
 
