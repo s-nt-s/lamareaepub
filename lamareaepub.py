@@ -12,7 +12,7 @@ from core.j2 import Jnj2
 from core.tratar_imgs import tune_epub
 from glob import glob
 import re
-from subprocess import run, DEVNULL, call
+from subprocess import run, DEVNULL, call, check_output
 import os
 import tempfile
 import epub_meta
@@ -21,6 +21,8 @@ import crypt
 import textwrap
 import bs4
 import requests
+from datetime import datetime
+from urllib.parse import unquote
 
 parser = argparse.ArgumentParser(description='Genera html único y epub a partir de www.revista.lamarea.com')
 parser.add_argument("--num", nargs='*', type=int, help="Números a generar (por defecto son todos)")
@@ -67,9 +69,10 @@ if arg.html or arg.todo:
                 l = l.strip()
                 if len(l)>0 and not l.startswith("#"):
                     graficas.add(l)
+                    graficas.add(unquote(l))
 
     for num, d in sorted(config.items()):
-        if arg.num is None or numm in arg.num:
+        if arg.num is None or num in arg.num:
             if num == 62:
                 continue
             html_path  = get_path_html(num)
@@ -122,21 +125,6 @@ if arg.epub or arg.todo:
                 debug=None
             ))
 
-def get_html_bytes(num):
-    return ">10 MB"
-    html_file = get_path_html(num)
-    size = os.path.getsize(html_file)
-    with open(html_file, "r") as f:
-        contents = f.read()
-        soup = bs4.BeautifulSoup(contents, "lxml")
-        for img in soup.select("img[src]"):
-            url = img.attrs["src"]
-            if url.startswith("http"):
-                d = requests.head(url)
-                s = d.headers.get('Content-Length', 0)
-                size = size + int(s)
-    return size
-
 if arg.index or arg.todo:
     data = {}
     j2 = Jnj2("j2/", out_dir)
@@ -149,7 +137,6 @@ if arg.index or arg.todo:
             fh.write(base64.decodebytes(meta['cover_image_content']))
         call(["mogrify", "-strip", "-resize", "x275", "-quality", "75", img_path])
         del meta['cover_image_content']
-        meta['html_size_in_bytes'] = get_html_bytes(num)
         data[num]=meta
 
         dt = config[int(num)]
@@ -167,6 +154,7 @@ if arg.index or arg.todo:
 
     j2.save(
         "index.html",
-        data=data
+        data=data,
+        now=datetime.now().strftime("%d-%m-%Y %H:%M")
     )
 

@@ -28,7 +28,7 @@ div.item > div.info {
 }
 div.item > div.content {
   padding: 5px;
-  width: 250px;
+  width: 245px;
   overflow: hidden;
   /*position: relative;*/
 }

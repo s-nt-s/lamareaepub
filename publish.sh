@@ -1,6 +1,6 @@
 #!/bin/bash
 cd out
-scp -r index.html favicon.* epub html portada rec pilan:www/private/lamarea
+scp -r index.html favicon.* epub portada rec pilan:www/private/lamarea
 scp -r htpasswd lamarea.nginx pilan:www/
 ssh -t pilan '
 sudo cp www/htpasswd/*.htpasswd /etc/nginx/htpasswd/

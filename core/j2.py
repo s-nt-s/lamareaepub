@@ -3,42 +3,44 @@ import os
 from jinja2 import Environment, FileSystemLoader
 
 
-def my_date(dt):
+def my_date(dt, full=False):
     y, m, d = dt.split("-", 2)
     d, _ = d.split("T", 1)
     d=int(d)
     m=int(m)
-    y=int(y[2:])
+    y=int(y)
     if d>18:
         m=m+1
     if m == 13:
         m = 1
         y = y + 1
     if m==1:
-        m="ene"
+        m="enero"
     elif m==2:
-        m="feb"
+        m="febrero"
     elif m==3:
-        m="mar"
+        m="marzo"
     elif m==4:
-        m="abr"
+        m="abril"
     elif m==5:
-        m="may"
+        m="mayo"
     elif m==6:
-        m="jun"
+        m="junio"
     elif m==7:
-        m="jul"
+        m="julio"
     elif m==8:
-        m="ago"
+        m="agosto"
     elif m==9:
-        m="sep"
+        m="septiembre"
     elif m==10:
-        m="oct"
+        m="octubre"
     elif m==11:
-        m="nov"
+        m="noviembre"
     elif m==12:
-        m="dic"
-    return m+"-"+str(y)
+        m="diciembre"
+    if full:
+        return m.title()+" de "+str(y)
+    return m[:3]+"-"+str(y)[2:]
 
 def my_title(t):
     _, t = t.split(": ",1)
