@@ -9,7 +9,7 @@ def my_date(dt, full=False):
     d=int(d)
     m=int(m)
     y=int(y)
-    if d>18:
+    if d>17:
         m=m+1
     if m == 13:
         m = 1

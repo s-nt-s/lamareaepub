@@ -49,8 +49,9 @@ def get_path_html(num):
 
 
 with open(arg.config, 'r') as f:
-    config={}
-    for d in yaml.load_all(f):
+    generator = yaml.load_all(f)
+    config= next(generator)
+    for d in generator:
         if "url" not in d:
             d["url"] = "http://www.revista.lamarea.com/"
         if "usuario" not in d:
@@ -60,6 +61,7 @@ with open(arg.config, 'r') as f:
             if k not in d:
                 d[k] = None
         config[d['num']] = d
+
 
 if arg.html or arg.todo:
     graficas = set()
@@ -141,7 +143,8 @@ if arg.index or arg.todo:
 
         dt = config[int(num)]
         with open(htpasswd_dir+"lamarea_"+num+".htpasswd", "w") as f:
-            f.write("%s:%s" % (dt['usuario'], crypt.crypt(dt['clave'], 'salt')))
+            f.write("%s:%s\n" % (dt['usuario'], crypt.crypt(dt['clave'], 'salt')))
+            f.write("%s:%s" % (config['usuario'], crypt.crypt(config['clave'], 'salt')))
         nginx_config = nginx_config + textwrap.dedent('''
             location ~* .+\\blamarea_%s\\..+ {
                 auth_basic "Inserta el usuario y clave para el ejemplar %s de La Marea";
