@@ -144,10 +144,10 @@ if arg.index or arg.todo:
         dt = config[int(num)]
         with open(htpasswd_dir+"lamarea_"+num+".htpasswd", "w") as f:
             f.write("%s:%s\n" % (dt['usuario'], crypt.crypt(dt['clave'], 'salt')))
-            f.write("%s:%s" % (config['usuario'], crypt.crypt(config['clave'], 'salt')))
+            #f.write("%s:%s" % (config['usuario'], crypt.crypt(config['clave'], 'salt')))
         nginx_config = nginx_config + textwrap.dedent('''
             location ~* .+\\blamarea_%s\\..+ {
-                auth_basic "Inserta el usuario y clave para el ejemplar %s de La Marea";
+                auth_basic "Inserta el usuario y clave para el ejemplar %s de La Marea. Si no lo tienes, ve a https://kiosco.lamarea.com/";
                 auth_basic_user_file /etc/nginx/htpasswd/lamarea_%s.htpasswd;
             }
         ''' % (num, num, num)).lstrip()

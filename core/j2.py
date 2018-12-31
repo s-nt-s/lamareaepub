@@ -3,7 +3,7 @@ import os
 from jinja2 import Environment, FileSystemLoader
 
 
-def my_date(dt, full=False):
+def my_date(dt, full=False, year=False):
     y, m, d = dt.split("-", 2)
     d, _ = d.split("T", 1)
     d=int(d)
@@ -38,6 +38,8 @@ def my_date(dt, full=False):
         m="noviembre"
     elif m==12:
         m="diciembre"
+    if year:
+        return y
     if full:
         return m.title()+" de "+str(y)
     return m[:3]+"-"+str(y)[2:]
