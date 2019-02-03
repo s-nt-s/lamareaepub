@@ -14,6 +14,7 @@ nonumb = re.compile("\D+")
 re_apendices = re.compile(r"^https?://(.*.)?\blamarea.com/.+/.+")
 re_scribd = re.compile(r"^(https://www.scribd.com/embeds/\d+)/.*")
 re_youtube = re.compile(r"https://www.youtube.com/embed/(.+?)\?.*")
+re_infogram = re.compile(r"https://infogram.com/[\d\w\-]+")
 re_banner = re.compile(r".*(la-marea-\d+x\d+|bannercilli|bannernewsletter|LM_aportacion_\d+x\d+)\.(gif|jpg).*")
 
 tag_concat = ['u', 'ul', 'ol', 'i', 'em', 'strong', 'b']
@@ -140,6 +141,25 @@ def limpiar(nodo):
             i.attrs["href"] = src
             i.attrs["target"] = "_blank"
             i.string=get_title(src)
+
+    for a in nodo.findAll("a"):
+        href = a.attrs["href"]
+        if not re_infogram.match(href):
+            continue
+        div = a.parent
+        if div and div.name == "div" and sp.sub("", div.get_text()) == sp.sub("", a.get_text())+"Infogram":
+            script = div.previous_sibling
+            while script is not None and isinstance(script, bs4.element.NavigableString) and len(sp.sub("", script.string))==0:
+                script = script.previous_sibling
+            if script and script.name == "p" and script.find("script"):
+                a.attrs.clear()
+                a.attrs["href"] = href
+                script.extract()
+                div.attrs.clear()
+                div.name = "p"
+                for c in div.contents:
+                    if c != a:
+                        c.extract()
 
     for i in nodo.findAll(block):
         if i.find("img"):
