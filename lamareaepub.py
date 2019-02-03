@@ -23,6 +23,7 @@ import bs4
 import requests
 from datetime import datetime
 from urllib.parse import unquote
+import json
 
 parser = argparse.ArgumentParser(description='Genera html único y epub a partir de www.revista.lamarea.com')
 parser.add_argument("--num", nargs='*', type=int, help="Números a generar (por defecto son todos)")
@@ -50,7 +51,7 @@ def get_path_html(num):
 
 with open(arg.config, 'r') as f:
     generator = yaml.load_all(f)
-    config= next(generator)
+    config = next(generator)
     for d in generator:
         if "url" not in d:
             d["url"] = "http://www.revista.lamarea.com/"
@@ -73,7 +74,7 @@ if arg.html or arg.todo:
                     graficas.add(l)
                     graficas.add(unquote(l))
 
-    for num, d in sorted(config.items()):
+    for num, d in sorted([(k, v) for k,v in config.items() if isinstance(k, int)]):
         if arg.num is None or num in arg.num:
             if num == 62:
                 continue

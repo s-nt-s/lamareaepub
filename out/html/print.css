@@ -23,6 +23,9 @@ h1 {
 h2 {
     margin-top: 0em;
 }
+div.autor {
+    margin-top: 16px;
+}
 div.autor.conimg > div {
     display:inline;
 }

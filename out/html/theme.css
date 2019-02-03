@@ -37,7 +37,9 @@ a.local {
     text-decoration: none;
     border-bottom: 1px blue dotted;
 }
-
+div.autor {
+    margin-top: 16px;
+}
 div.autor.conimg > div {
     display:inline;
 }
