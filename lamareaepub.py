@@ -8,7 +8,7 @@ import os
 from bunch import Bunch
 from core.lamareahtml import LaMarea, tune_html_for_epub
 from core.util import get_html
-from core.j2 import Jnj2
+from core.j2 import Jnj2, my_date
 from core.tratar_imgs import tune_epub
 from glob import glob
 import re
@@ -24,6 +24,8 @@ import requests
 from datetime import datetime
 from urllib.parse import unquote
 import json
+from feedgen.feed import FeedGenerator
+import pytz
 
 parser = argparse.ArgumentParser(description='Genera html único y epub a partir de www.revista.lamarea.com')
 parser.add_argument("--num", nargs='*', type=int, help="Números a generar (por defecto son todos)")
@@ -32,6 +34,7 @@ parser.add_argument('--html', action='store_true', help="Generar los html")
 parser.add_argument('--epub', action='store_true', help="Generar los epub en base a los html")
 parser.add_argument('--index', action='store_true', help="Generar el index en base a los epub")
 parser.add_argument('--todo', action='store_true', help="Genera todo")
+parser.add_argument('--rss', type=str, help="Genera un RSS y necesita como parámetro la url del dominio")
 parser.add_argument("config", nargs='?', help="Fichero de configuración en formato Yaml", default="lamarea.yml")
 
 arg = parser.parse_args()
@@ -128,7 +131,7 @@ if arg.epub or arg.todo:
                 debug=None
             ))
 
-if arg.index or arg.todo:
+if arg.index or arg.rss or arg.todo:
     data = {}
     j2 = Jnj2("j2/", out_dir)
     nginx_config = ""
@@ -156,9 +159,35 @@ if arg.index or arg.todo:
     with open(out_dir+"lamarea.nginx", "w") as f:
         f.write(nginx_config)
 
-    j2.save(
+    now = datetime.now(pytz.timezone("Europe/Madrid"))
+    
+    html = j2.save(
         "index.html",
         data=data,
-        now=datetime.now().strftime("%d-%m-%Y %H:%M")
+        now=now.strftime("%d-%m-%Y %H:%M")
     )
 
+    html = bs4.BeautifulSoup(html, "lxml")
+    info = html.find("div", attrs={"id": "info"})
+
+    if arg.rss:
+        WEB_SITE = "http://" + arg.rss
+        fg = FeedGenerator()
+        fg.title('La Marea en EPUB')
+        fg.link(href=WEB_SITE)
+        fg.description('<![CDATA['+str(info)+']]>')
+        fg.pubDate(now)
+        fg.language('es')
+
+        for num, meta  in sorted(data.items()):
+            epub_url = WEB_SITE+("/epub/lamarea_%s.epub" % num)
+            
+            fe = fg.add_entry()
+            fe.title(meta['title'][9:])
+            fe.link(href=epub_url)
+            fe.pubDate(meta['publication_date'])
+            fe.enclosure(url=epub_url, length=str(meta['file_size_in_bytes']), type='application/epub+zip')
+            fe.guid(guid=epub_url, permalink=True)
+            fe.description("Número de "+my_date(meta['publication_date'], True).lower())
+            
+        fg.rss_file(out_dir+'rss.xml')

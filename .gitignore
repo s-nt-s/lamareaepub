@@ -1,7 +1,9 @@
 *.txt
 *.yml
 *.txt
+ver_descargas.sh
 __pycache__
+calibre
 out/*
 !out/rec/
 !out/favicon.*

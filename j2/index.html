@@ -5,6 +5,7 @@
 		<link href="rec/main.css" rel="stylesheet" type="text/css"/>
 		<meta charset="utf-8"/>
         <link rel="icon" href="favicon.png" type="image/x-icon" />
+        <link href="rss.xml" type="application/rss+xml" rel="alternate" title="RSS feed" />
 	</head>
 	<body>
         <header>
@@ -41,7 +42,7 @@
         {% endfor %}
         </section>
         <footer>
-            <p>
+            <div id="info">
                 <p>Esta página no pertenece ni esta vinculada a <em><a href="https://www.lamarea.com/" target="_blank">La Marea</a></em> o a la cooperativa <em>MásPúblico</em>.</p>
                 <p>Esta página simplemente es un recopilatorio de los EPUBs generados (a partir de la edición digital) por una de las personas suscritas a la revista de <em>La Marea</em>.</p>
                 <p>Cada enlace a un EPUB requiere el mismo usuario y contraseña que facilita <em>La Marea</em> para la <a href="http://www.revista.lamarea.com/" target="_blank">edición digital de su revista</a>, de manera que las personas ya suscritas podrán beneficiarse también de estos EPUBs como si fuera la propia revista quien los facilitara.</p>
@@ -52,8 +53,9 @@
                 <p>(*) Para reducir el tamaño de los EPUBs a algo razonable se han recomprimido y redimensionado (y en algunos casos recortado) todas las imágenes, dejando solo en color la portada y las gráficas.</p>
                 <p>(*) Los EPUB contienen como <em>Apéndices</em> (último capítulo de cada EPUB) aquellos artículos que se enlazan en el número de la revista y que aún no perteneciendo a ella si pertenecen a otros contenidos de <em>La Marea</em>.</p>
                 <p>(*) El resto de enlaces se han modificado para que muestren entre corchetes el dominio de la web destino, de manera que el lector sepa el origen del contenido que se esta enlazando sin necesidad de pinchar en dicho enlace.</p>
-                <hr/>
-                <p>Esta página no ha sido actualizada desde {{now}}</p>
+            </div>
+            <hr/>
+            <p>Esta página no ha sido actualizada desde {{now}}</p>
         </footer>
 	</body>
 </html>

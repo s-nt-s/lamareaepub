@@ -25,7 +25,7 @@ sp = re.compile("\s+", re.UNICODE)
 nb = re.compile("^\s*\d+\.\s+", re.UNICODE)
 
 heads = ["h1", "h2", "h3", "h4", "h5", "h6"]
-block = heads + ["p", "div", "table", "article"]
+block = heads + ["p", "div", "table", "article", "figure"]
 inline = ["span", "strong", "b", "del", "i", "em"]
 
 urls = ["#", "javascript:void(0)"]
@@ -248,7 +248,8 @@ def limpiar2(nodo):
                 if len(srcset)>0:
                     img.attrs["src"] = srcset
                 continue
-            img.attrs["src"] = href
+            if "attachment_id=" not in href:
+                img.attrs["src"] = href
             a.unwrap()
     for n in nodo.findAll(heads + ["p", "div", "span", "strong", "b", "i", "article"]):
         if "id" not in n.attrs and n.name == "span":
@@ -274,7 +275,7 @@ def rutas(url, soup):
 
 def build_soup(url, response):
     text = response.text
-    
+
     if url == "https://www.lamarea.com/2018/04/03/siete-puntos-de-friccion-en-el-informe-de-los-expertos-en-transicion-energetica/":
         rpl = ' <b class="unwrapme"><span class="unwrapme">'
         text = text.replace('<b>1.Aprobación no unánime: <span style="font-weight: 400;">', '<strong>1.Aprobación no unánime</strong>:'+rpl)
@@ -295,7 +296,7 @@ def build_soup(url, response):
         text = text.replace('la calidad del trabaj</p>\n<p>o no era de excelencia', 'la calidad del trabajo no era de excelencia')
 
     soup = bs4.BeautifulSoup(text, "lxml")
-    
+
     for unwrapme in soup.select(".unwrapme"):
         unwrapme.unwrap()
     for extractme in soup.select(".extractme"):

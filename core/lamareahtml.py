@@ -423,13 +423,14 @@ class LaMarea():
             if img.attrs["src"] in self.config.graficas:
                 add_class(img, "grafica")
 
-        for p in soup.findAll("p"):
+        for p in soup.findAll(["p", "figure"]):
             img = p.findAll("img")
             if len(img)==1:
                 txt = sp.sub(" ", p.get_text()).strip()
                 if len(txt)==0:
                     img = img[0]
                     add_class(img, "imagensola")
+                    p.name = "p"
 
         for div in soup.select("article > div"):
             if not div.attrs:
