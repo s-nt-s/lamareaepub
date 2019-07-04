@@ -69,6 +69,7 @@ def get_html(soup):
     h = r.sub(r"\n\1\n", h)
     r = re.compile(r"\n\n+", re.MULTILINE | re.DOTALL | re.UNICODE)
     h = r.sub(r"\n", h)
+    h = h.replace('<div class="contenedor" id="apendices">', '\n<div class="contenedor" id="apendices">\n')
     return h
 
 
@@ -143,6 +144,9 @@ def limpiar(nodo):
             i.string=get_title(src)
 
     for a in nodo.findAll("a"):
+        if not(a.find("img") or a.get_text().strip()):
+            a.unwrap()
+            continue
         href = a.attrs["href"]
         if not re_infogram.match(href):
             continue
@@ -168,7 +172,7 @@ def limpiar(nodo):
         if len(txt) == 0 or txt == "." or txt == "FALTAIMAGENPORTADA":
             i.extract()
         else:
-            i2 = i.select(" > " + i.name)
+            i2 = i.select(":scope > " + i.name)
             if len(i2) == 1:
                 txt2 = sp.sub("", i2[0].get_text()).strip()
                 if txt == txt2:
@@ -180,7 +184,7 @@ def limpiar(nodo):
             i.unwrap()
 
     for i in nodo.findAll(block + inline):
-        i2 = i.select(" > " + i.name)
+        i2 = i.select(":scope > " + i.name)
         if len(i2) == 1:
             txt = sp.sub("", i.get_text()).strip()
             txt2 = sp.sub("", i2[0].get_text()).strip()
@@ -196,7 +200,7 @@ def limpiar(nodo):
         flag = True
         for td in t.findAll(["td", "th"]):
             txt = sp.sub(" ",td.get_text()).strip()
-            for p in td.select("> p"):
+            for p in td.select(":scope > p"):
                 p_txt = sp.sub(" ",p.get_text()).strip()
                 if p_txt != txt:
                     flag = False
@@ -260,6 +264,9 @@ def limpiar2(nodo):
         if _id and n.name in heads and _id.startswith("http"):
             attrs["id"] = _id
         n.attrs = attrs
+    for a in nodo.findAll("a"):
+        if not a.select("*") and not a.get_text().strip():
+            a.unwrap()
 
 def rutas(url, soup):
     for a in soup.findAll(["a", "img", "iframe"]):
@@ -274,7 +281,10 @@ def rutas(url, soup):
         a.attrs[attr] = href
 
 def build_soup(url, response):
-    text = response.text
+    if isinstance(response, str):
+        text = response.strip()
+    else:
+        text = response.text
 
     if url == "https://www.lamarea.com/2018/04/03/siete-puntos-de-friccion-en-el-informe-de-los-expertos-en-transicion-energetica/":
         rpl = ' <b class="unwrapme"><span class="unwrapme">'
@@ -295,7 +305,17 @@ def build_soup(url, response):
     if url == "http://www.revista.lamarea.com/el-revuelo-sobre-la-tesis-de-sanchez-tambien-revela-la-perversion-de-la-prensa/":
         text = text.replace('la calidad del trabaj</p>\n<p>o no era de excelencia', 'la calidad del trabajo no era de excelencia')
 
-    soup = bs4.BeautifulSoup(text, "lxml")
+    if url == "http://www.revista.lamarea.com/dejar-de-volar-lo-habias-pensado-2/":
+        text = re.sub(r'</a><em><a href="https://twitter.com/flightradar24/status/1118975980075388928".*?>gif</a></em>', '<em>gif</em></a>', text)
+
+    if url == "http://www.revista.lamarea.com/resumen-yoibextigo/":
+        text = re.sub(r'</a><em><a href="https://www.elconfidencial.com/empresas/2019-04-24/llyc-jose-luis-ayllon-roman-escolano_1957678/".*?>El Confidencial</a></em>', '<em>El Confidencial</em></a>', text)
+
+    if isinstance(response, str):
+        soup = bs4.BeautifulSoup(text, "html.parser")
+    else:
+        soup = bs4.BeautifulSoup(text, "lxml")
+
 
     for unwrapme in soup.select(".unwrapme"):
         unwrapme.unwrap()

@@ -77,7 +77,7 @@ class Pagina:
         if self.titulo.lower() in ("anuncios breves", "publicidad ética"):
             return "anuncios"
         return None
-        
+
 
     def add(self, a, tipo=None, hjs=[]):
         url = a.attrs["href"].strip()
@@ -228,7 +228,7 @@ class LaMarea():
 
         autores = []
         autores_nombres = []
-        
+
         for art in soup.select("article"):
             #art.find("div").unwrap()
             cabs = []
@@ -273,10 +273,10 @@ class LaMarea():
                             a.string = aut
                     for b in auth.select("br"):
                         b.extract()
-                        
+
         limpiar2(soup)
         for a in soup.findAll("article"):
-            n1 = a.select("> *")[0]
+            n1 = a.select(":scope > *")[0]
             if n1.name[0]=="h":
                 n1.name="p"
 
@@ -349,13 +349,13 @@ class LaMarea():
             contenedor = soup.new_tag("contenedor")
             contenedor.attrs["id"]="apendices"
             contenedor.attrs["class"]="contenedor"
-            
+
             h = soup.new_tag("h1")
             h.string = "APÉNDICES"
             contenedor.append(h)
-            apendices = sorted(apendices, key=lambda k: k.date) 
+            apendices = sorted(apendices, key=lambda k: k.date)
             for a in apendices:
-                self.heads.append((a.titulo, a.url))       
+                self.heads.append((a.titulo, a.url))
                 contenedor.append(a.titulo)
                 contenedor.append(a.articulo)
                 print ("    " + a.titulo.get_text())
@@ -397,7 +397,7 @@ class LaMarea():
         for n in soup.findAll(text=lambda text: isinstance(text, bs4.Comment)):
             n.extract()
         for div in soup.findAll("div"):
-            if len(div.findAll(heads)) > 0 or (len(div.select(" > *")) == 0 and len(sp.sub("", div.get_text().strip())) == 0):
+            if len(div.findAll(heads)) > 0 or (len(div.select(":scope > *")) == 0 and len(sp.sub("", div.get_text().strip())) == 0):
                 div.unwrap()
 
         if self.config.portada:
@@ -441,17 +441,34 @@ class LaMarea():
 class Apendice:
     def __init__(self, url):
         r = requests.get(url, headers=default_headers)
-        self.soup = build_soup(url, r)
-        self.titulo = None
-        self.content = None
-        self.date = None
         self.url = url
-        r = requests.get(url, headers=default_headers)
         self.soup = build_soup(url, r)
-        dt = self.soup.find("meta", attrs={"property":"article:published_time"})
-        if dt:
-            dt = dt.attrs["content"]
-            self.date = datetime.strptime(dt[:22] + dt[23:], '%Y-%m-%dT%H:%M:%S%z') # 2018-04-02T11:37:52+00:00
+        self.shortlink = None
+        self.api = None
+        self.js = {}
+        aux = self.soup.select("link[rel=shortlink]")
+        if len(aux)>0:
+            self.shortlink = aux[0].attrs["href"]
+            id = self.shortlink.split("=")[-1]
+            aux = self.soup.select('link[rel="https://api.w.org/"]')
+            if len(aux)>0:
+                self.api = aux[0].attrs["href"]+"wp/v2/posts/"+id
+                r = requests.get(self.api, headers=default_headers)
+                self.js = r.json()
+        self.titulo = self.js.get("title", {}).get("rendered", None)
+        if self.titulo:
+            self.titulo = bs4.BeautifulSoup("<h2>"+self.titulo.strip()+"</h2>", "html.parser").find("h2")
+        self.content = self.js.get("content", {}).get("rendered", None)
+        if self.content:
+            self.content = build_soup(self.url, self.content)
+        self.date = self.js.get("date", None)
+        if self.date is not None:
+            self.date = datetime.strptime(self.date, '%Y-%m-%dT%H:%M:%S')
+        else:
+            dt = self.soup.find("meta", attrs={"property":"article:published_time"})
+            if dt:
+                dt = dt.attrs["content"]
+                self.date = datetime.strptime(dt[:22] + dt[23:], '%Y-%m-%dT%H:%M:%S%z') # 2018-04-02T11:37:52+00:00
 
     def isok(self):
         if not self.date and not self.titulo or not self.content:
@@ -464,7 +481,7 @@ class Apendice:
     def urls(self):
         urls = [a.attrs["href"] for a in self.content.findAll("a", attrs={'href': re_apendices})]
         return sorted(set(self.urls))
-        
+
     @property
     def articulo(self):
         if not self.isok():
@@ -472,7 +489,7 @@ class Apendice:
         self.titulo.attrs.clear()
         self.titulo.attrs["id"] = self.url
         return self.get_articulo()
-        
+
     def get_articulo(self):
         return None
 
@@ -515,35 +532,27 @@ class ApendiceApuntes(Apendice):
         limpiar2(articulo)
 
         return articulo
-    
+
 class ApendiceMarea(Apendice):
-    
+
     def __init__(self, url):
         Apendice.__init__(self, url)
-        self.titulo = self.soup.find("h2", attrs={'id': "titulo"})
-        self.content = self.soup.find("div", attrs={'class': "shortcode-content"})
 
     def get_articulo(self):
         articulo = self.soup.new_tag("article")
         articulo.attrs["data-src"] = self.url
         ap = self.soup.new_tag("p")
 
-        ia = self.soup.select("div.infoautor a.icon-link")
+        ia = self.soup.select("div.article-info div.author-name a")
         if len(ia) > 0:
             ia = ia[0]
             ia.attrs.clear()
             ia.name = "strong"
             ap.append(ia)
-    
+
         ap.append(" " + self.date.strftime("%d-%m-%Y"))
         if len(sp.sub(" ", ap.get_text().strip())) > 0:
             articulo.append(ap)
-        e = None #self.soup.find("div",attrs={'class': "except"})
-        if e:
-            txt1 = re.sub(r"\W", "", sp.sub(" ", e.get_text()).strip())
-            txt2 = re.sub(r"\W", "", sp.sub(" ", self.content.get_text()).strip())
-            if txt1 not in txt2:
-                articulo.append(e)
         img = self.soup.findAll("figure.single-post-image")
         if len(img)>0:
             img=img[0]
@@ -563,7 +572,7 @@ def get_apendice(url):
     elif dom == "apuntesdeclase.lamarea.com":
         return ApendiceApuntes(url)
     return None
-    
+
 
 def tune_html_for_epub(html_file, *args):
     with open(html_file, "r") as f:
@@ -575,7 +584,7 @@ def tune_html_for_epub(html_file, *args):
 
     for noepup in soup.select(extract):
         noepup.extract()
-        
+
     for contenedor in soup.select(".contenedor"):
         contenedor.unwrap()
 
@@ -605,4 +614,3 @@ def tune_html_for_epub(html_file, *args):
     with open(out, "w") as file:
         file.write(h)
     return out
-            

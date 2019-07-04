@@ -53,7 +53,7 @@ def get_path_html(num):
 
 
 with open(arg.config, 'r') as f:
-    generator = yaml.load_all(f)
+    generator = yaml.load_all(f, Loader=yaml.FullLoader)
     config = next(generator)
     for d in generator:
         if "url" not in d:
@@ -112,7 +112,7 @@ if arg.epub or arg.todo:
             html_tune = tune_html_for_epub(html_file)
             run(["miepub", "--chapter-level", "2", "--out", epub, html_tune])
             '''
-            
+
             html_tune = tune_html_for_epub(html_file, "anuncios")
 
             epub = tempfile.NamedTemporaryFile(suffix='.epub', delete=True).name
@@ -120,7 +120,7 @@ if arg.epub or arg.todo:
 
             #print(html_tune)
             os.remove(html_tune)
-            
+
             print("")
             tune_epub(Bunch(
                 epub=epub,
@@ -160,7 +160,7 @@ if arg.index or arg.rss or arg.todo:
         f.write(nginx_config)
 
     now = datetime.now(pytz.timezone("Europe/Madrid"))
-    
+
     html = j2.save(
         "index.html",
         data=data,
@@ -181,7 +181,7 @@ if arg.index or arg.rss or arg.todo:
 
         for num, meta  in sorted(data.items()):
             epub_url = WEB_SITE+("/epub/lamarea_%s.epub" % num)
-            
+
             fe = fg.add_entry()
             fe.title(meta['title'][9:])
             fe.link(href=epub_url)
@@ -189,5 +189,5 @@ if arg.index or arg.rss or arg.todo:
             fe.enclosure(url=epub_url, length=str(meta['file_size_in_bytes']), type='application/epub+zip')
             fe.guid(guid=epub_url, permalink=True)
             fe.description("Número de "+my_date(meta['publication_date'], True).lower())
-            
+
         fg.rss_file(out_dir+'rss.xml')
