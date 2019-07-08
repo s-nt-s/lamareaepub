@@ -8,6 +8,7 @@ import time
 from urllib.parse import urljoin, urlparse
 from .util import get_tpt, get_title, limpiar, limpiar2, rutas, heads, tab, rPortada, sp, re_apendices, build_soup, get_html
 from datetime import datetime
+import pytz
 
 default_headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:54.0) Gecko/20100101 Firefox/54.0',
@@ -21,6 +22,12 @@ default_headers = {
     'Connection': 'keep-alive',
     'Upgrade-Insecure-Requests': '1',
 }
+
+def fixDate(dt):
+    try:
+        return pytz.UTC.localize(dt)
+    except:
+        return dt
 
 def add_class(node, class_name):
     cl = node.attrs.get("class", "")
@@ -353,7 +360,7 @@ class LaMarea():
             h = soup.new_tag("h1")
             h.string = "APÉNDICES"
             contenedor.append(h)
-            apendices = sorted(apendices, key=lambda k: k.date)
+            apendices = sorted(apendices, key=lambda k: fixDate(k.date))
             for a in apendices:
                 self.heads.append((a.titulo, a.url))
                 contenedor.append(a.titulo)
