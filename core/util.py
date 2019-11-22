@@ -322,12 +322,17 @@ def build_soup(url, response):
     for extractme in soup.select(".extractme"):
         extractme.extract()
 
+    for s in soup.findAll("span", text="◼"):
+        if not s.select("*"):
+            s.extract()
+
     rutas(url, soup)
 
     for img in soup.findAll("img"):
-        if "src" not in img.attrs or img.attrs["src"].startswith("data:"):
+        src = img.attrs.get("src")
+        if src is None or src.startswith("data:"):
             continue
-        if re_banner.search(img.attrs["src"]):
+        if re_banner.search(src):
             p = img.find_parent("p")
             if p and not sp.sub("",p.get_text()).strip():
                 p.extract()

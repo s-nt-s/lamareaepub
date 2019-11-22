@@ -101,6 +101,8 @@ if arg.html or arg.todo:
 
 if arg.epub or arg.todo:
     for html_file in sorted(glob(html_dir+"*.html")):
+        if ".tmp." in html_file:
+            continue
         num = int(re.sub(r"\D", "", html_file))
         if arg.num is None or num in arg.num:
             print ("")

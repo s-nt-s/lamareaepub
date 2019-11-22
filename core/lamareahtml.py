@@ -429,6 +429,11 @@ class LaMarea():
         for img in soup.findAll("img"):
             if img.attrs["src"] in self.config.graficas:
                 add_class(img, "grafica")
+            else:
+                art = img.find_parent("article")
+                if art and not art.get_text().strip():
+                    print(img.attrs["src"])
+                    add_class(img, "grafica")
 
         for p in soup.findAll(["p", "figure"]):
             img = p.findAll("img")
@@ -560,7 +565,45 @@ class ApendiceMarea(Apendice):
         ap.append(" " + self.date.strftime("%d-%m-%Y"))
         if len(sp.sub(" ", ap.get_text().strip())) > 0:
             articulo.append(ap)
-        img = self.soup.findAll("figure.single-post-image")
+        img = self.soup.select("figure.single-post-image")
+        if len(img)>0:
+            img=img[0]
+            articulo.append(img)
+
+        articulo.append(self.content)
+
+        limpiar(articulo)
+        limpiar2(articulo)
+
+        return articulo
+
+class ClimaticaMarea(Apendice):
+
+    def __init__(self, url):
+        Apendice.__init__(self, url)
+        if not self.titulo:
+            self.titulo = self.soup.find("h1")
+            self.titulo.name = "h1"
+            self.titulo.attrs.clear()
+        if not self.content:
+            self.content = self.soup.find("div", attrs={"class":"contenido"})
+
+    def get_articulo(self):
+        articulo = self.soup.new_tag("article")
+        articulo.attrs["data-src"] = self.url
+        ap = self.soup.new_tag("p")
+
+        ia = self.soup.select("span.author a")
+        if len(ia) > 0:
+            ia = ia[0]
+            ia.attrs.clear()
+            ia.name = "strong"
+            ap.append(ia)
+
+        ap.append(" " + self.date.strftime("%d-%m-%Y"))
+        if len(sp.sub(" ", ap.get_text().strip())) > 0:
+            articulo.append(ap)
+        img = self.soup.select("div.imagen-destacada.superior figure")
         if len(img)>0:
             img=img[0]
             articulo.append(img)
@@ -574,9 +617,11 @@ class ApendiceMarea(Apendice):
 
 def get_apendice(url):
     dom = urlparse(url).netloc
+    if dom in ("www.climatica.lamarea.com", "climatica.lamarea.com"):
+        return ClimaticaMarea(url)
     if dom in ("www.lamarea.com", "lamarea.com"):
         return ApendiceMarea(url)
-    elif dom == "apuntesdeclase.lamarea.com":
+    if dom == "apuntesdeclase.lamarea.com":
         return ApendiceApuntes(url)
     return None
 

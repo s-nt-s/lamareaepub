@@ -37,11 +37,11 @@ parser.add_argument('--out', help='Epub de salida', required=True)
 arg = parser.parse_args()
 '''
 
-ancho_defecto = 544 # 600 - 20
+ancho_defecto = 1050 # 544 # 600 - 20
 ancho_anuncio = 400
-ancho_autor = 144
-ancho_grande = 720 # 1536 #1240
-ancho_gigante = 2048 #int(ancho_grande * 2)
+ancho_autor = 144*2
+ancho_portada = 1050 #720 # 1536 #1240
+ancho_gigante = 2048 #int(ancho_portada * 2)
 
 brillo_min = 60
 brillo_max = 255 - brillo_min
@@ -53,7 +53,7 @@ coord=re.compile(r"^(\d+)x(\d+)\+(\d+)\+(\d+)$")
 
 grey = ["-colorspace", "GRAY"]
 trim = ["+repage", "-fuzz", "600", "-trim"]
-    
+
 tmp_wks = tempfile.mkdtemp()
 
 def sizeof_fmt(num, suffix='B'):
@@ -88,7 +88,7 @@ def composicion(im):
             ng += cnt
             cl += cnt
         tt += cnt
-    return int(bl * 100 / tt), int(ng * 100 / tt), int(cl * 100 / tt), tt   
+    return int(bl * 100 / tt), int(ng * 100 / tt), int(cl * 100 / tt), tt
 
 def descargar(url):
     dwn = tmp_wks + os.path.basename(url)
@@ -121,7 +121,7 @@ def optimizar_portada(arg, img):
         cmds.extend(grey)
     '''
     if arg.resize:
-        cmds.extend(["-resize", str(ancho_grande) + ">"])
+        cmds.extend(["-resize", str(ancho_portada) + ">"])
     return cmds
 
 def optimizar(arg, mogrify, autores, graficas, s):
@@ -210,7 +210,7 @@ def tune_epub(arg):
                 autores.add(tmp_out+"/"+i.attrs["src"])
             for i in soup.select("img.grafica"):
                 graficas.add(tmp_out+"/"+i.attrs["src"])
-        
+
     imgs = []
     for g in ('*.jpeg', '*.jpg', '*.png'):
         imgs.extend(glob.glob(media + g))
