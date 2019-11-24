@@ -461,10 +461,11 @@ class Apendice:
         aux = self.soup.select("link[rel=shortlink]")
         if len(aux)>0:
             self.shortlink = aux[0].attrs["href"]
-            id = self.shortlink.split("=")[-1]
+            self.id = self.shortlink.split("=")[-1]
+            self.id = int(self.id)
             aux = self.soup.select('link[rel="https://api.w.org/"]')
             if len(aux)>0:
-                self.api = aux[0].attrs["href"]+"wp/v2/posts/"+id
+                self.api = aux[0].attrs["href"]+"wp/v2/posts/%s" % self.id
                 r = requests.get(self.api, headers=default_headers)
                 self.js = r.json()
         self.titulo = self.js.get("title", {}).get("rendered", None)
