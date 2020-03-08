@@ -8,4 +8,5 @@ out/*
 tmp/*
 !out/rec/
 !out/favicon.*
+!out/indice/*
 debug/*

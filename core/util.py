@@ -5,8 +5,12 @@ import bs4
 import re
 import argparse
 import time
+import yaml
 from urllib.parse import urlparse, urljoin
-from os.path import splitext
+from os.path import splitext, isfile
+from bunch import Bunch
+from urllib.parse import unquote
+import os
 
 rPortada = re.compile(r'"body_bg"\s*:\s*"\s*([^"]+)\s*"', re.IGNORECASE)
 tab = re.compile("^", re.MULTILINE)
@@ -31,6 +35,28 @@ inline = ["span", "strong", "b", "del", "i", "em"]
 urls = ["#", "javascript:void(0)"]
 
 meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+def read_file(file):
+    with open(file, "r") as f:
+        return f.read()
+
+def make_autocontenido(file, destino=None):
+    destino = destino or file
+    soup = bs4.BeautifulSoup(read_file(file), "lxml")
+    for l in soup.select("head link[type='text/css']"):
+        href = l.attrs.get("href")
+        medi = l.attrs.get("media")
+        if href:
+            href = urljoin(file, href)
+            if os.path.isfile(href):
+                l.string = read_file(href)
+                l.name = "style"
+                l.attrs.clear()
+                if medi:
+                    l.attrs["media"] = medi
+    with open(destino, "w") as f:
+        f.write(get_html(soup))
+
 
 def get_html(soup):
     h = str(soup)
@@ -260,7 +286,7 @@ def limpiar2(nodo):
             n.unwrap()
             continue
         _id = n.attrs.get("id", None)
-        attrs = {k:v for k, v in n.attrs.items() if k.startswith("data-") or k in ("style", )}
+        attrs = {k:v for k, v in n.attrs.items() if k.startswith("data-")}
         if _id and n.name in heads and _id.startswith("http"):
             attrs["id"] = _id
         n.attrs = attrs
@@ -340,3 +366,41 @@ def build_soup(url, response):
                 img.extract()
 
     return soup
+
+def get_config(file):
+    if not isfile(file):
+        raise Exception(file+" no exite")
+    with open(file, 'r') as f:
+        generator = yaml.load_all(f, Loader=yaml.FullLoader)
+        config = next(generator)
+        config = Bunch(**config)
+        config.out_dir = "out/"
+        config.html_dir = config.out_dir+ "html/"
+        config.epub_dir = config.out_dir +"epub/"
+        config.zip_dir = config.out_dir +"zip/"
+        config.cover_dir = config.out_dir+ "portada/"
+        config.indice_dir = config.out_dir+ "indice/"
+        config.graficas = set()
+        if os.path.isfile("graficas.txt"):
+            with open("graficas.txt", 'r') as f:
+                for l in f.readlines():
+                    l = l.strip()
+                    if len(l)>0 and not l.startswith("#"):
+                        config.graficas.add(l)
+                        config.graficas.add(unquote(l))
+        for d in generator:
+            if "url" not in d:
+                d["url"] = "http://www.revista.lamarea.com/"
+            if "usuario" not in d:
+                d["usuario"] = "LM"+str(d["num"])
+
+            for k in ("portada", "fecha", "titulo"):
+                if k not in d:
+                    d[k] = None
+            lamarea_num ="lamarea_"+str(d['num'])
+            d["epub"] = config.epub_dir+lamarea_num+".epub"
+            d["html"] = config.html_dir+lamarea_num+".html"
+            d["zip"] = config.zip_dir+lamarea_num+".zip"
+            d["indice"] = config.indice_dir+lamarea_num+".yml"
+            config[d['num']] = Bunch(**d)
+    return config
