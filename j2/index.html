@@ -3,7 +3,7 @@
 	<head>
 		<title>La Marea en EPUB</title>
 		<link href="rec/main.css" rel="stylesheet" type="text/css"/>
-		<meta charset="utf-8"/>
+		<cnf.meta charset="utf-8"/>
         <link rel="icon" href="favicon.png" type="image/x-icon" />
         <link href="rss.xml" type="application/rss+xml" rel="alternate" title="RSS feed" />
 	</head>
@@ -14,38 +14,38 @@
         </header>
         <section>
         {% set hack_last_year = {'o': None} %}
-        {% for num, meta in data.items()|sort(reverse = True) %}
+        {% for num, cnf in data|sort(reverse = True) %}
             {% set last_year = hack_last_year['o'] %}
-            {% set current_year = meta.publication_date | my_date(False, True) %}
-    
+            {% set current_year = cnf.meta.publication_date | my_date(False, True) %}
+
             {% if last_year!=current_year %}
             <h2 class="year y{{current_year}} {% if loop.index == 1 %}first{% endif %}">{{current_year}}</h2>
             {% endif %}
-            
-            <div class="item y{{meta.publication_date | my_date(False, True)}}" id="m{{num}}">
+
+            <div class="item y{{cnf.meta.publication_date | my_date(False, True)}}" id="m{{num}}">
                 <div class="info">
                     <span class="numero" title="Número {{num}}">#{{num}}</span>
-                    <span class="fecha" title="{{meta.publication_date | my_date(True)}}">{{meta.publication_date | my_date}}</span>
-                    <a class="epub" href="epub/lamarea_{{num}}.epub" title="EPUB #{{num}}, {{meta.file_size_in_bytes | bytes_to_mbs }}">EPUB</a>
-                    {#<a class="html" href="html/lamarea_{{num}}.html" target="_blank" title="HTML #{{num}}, {{meta.html_size_in_bytes | bytes_to_mbs }}">HTML</a>
-                    <span title="{{meta.downloads}} descargas a fecha de {{now}}">{{meta.downloads}} &#x23ec;</span>#}
+                    <span class="fecha" title="{{cnf.meta.publication_date | my_date(True)}}">{{cnf.meta.publication_date | my_date}}</span>
+                    <a class="epub" href="{{cnf.zip | replace(out_dir, "")}}" title="EPUB #{{num}}, {{cnf.meta.file_size_in_bytes | bytes_to_mbs }}">EPUB</a>
+                    {#<a class="html" href="{{cnf.html | replace(out_dir, "")}}" target="_blank" title="HTML #{{num}}, {{cnf.meta.html_size_in_bytes | bytes_to_mbs }}">HTML</a>
+                    <span title="{{cnf.meta.downloads}} descargas a fecha de {{now}}">{{cnf.meta.downloads}} &#x23ec;</span>#}
                     <a class="kiosko" title="Comprar y/o ver descripción y resumen del número {{num}}" href="https://kiosco.lamarea.com/producto/la-marea-no-{{num}}">Kiosko</a>
                 </div>
                 <div class="content">
-                    <h2 class="title" title="{{meta.title | my_title }}">{{meta.title | my_title }}</h2>
+                    <h2 class="title" title="{{cnf.meta.title | my_title }}">{{cnf.meta.title | my_title }}</h2>
                     <div class="cover">
-                        <img class="cover" src="portada/{{num}}{{meta.cover_image_extension}}" alt=""/>
+                        <img class="cover" src="portada/{{num}}{{cnf.meta.cover_image_extension}}" alt=""/>
                     </div>
                 </div>
             </div>
-            {% if hack_last_year.update({'o':current_year}) %}{% endif %} 
+            {% if hack_last_year.update({'o':current_year}) %}{% endif %}
         {% endfor %}
         </section>
         <footer>
             <div id="info">
                 <p>Esta página no pertenece ni esta vinculada a <em><a href="https://www.lamarea.com/" target="_blank">La Marea</a></em> o a la cooperativa <em>MásPúblico</em>.</p>
                 <p>Esta página simplemente es un recopilatorio de los EPUBs generados (a partir de la edición digital) por una de las personas suscritas a la revista de <em>La Marea</em>.</p>
-                <p>Cada enlace a un EPUB requiere el mismo usuario y contraseña que facilita <em>La Marea</em> para la <a href="http://www.revista.lamarea.com/" target="_blank">edición digital de su revista</a>, de manera que las personas ya suscritas podrán beneficiarse también de estos EPUBs como si fuera la propia revista quien los facilitara.</p>
+                <p>Cada enlace a un EPUB requiere la misma contraseña que facilita <em>La Marea</em> para la <a href="http://www.revista.lamarea.com/" target="_blank">edición digital de su revista</a>, de manera que las personas ya suscritas podrán beneficiarse también de estos EPUBs como si fuera la propia revista quien los facilitara.</p>
                 <p>Si no eres suscriptor de <em>La Marea</em> porque no te resultaba cómodo leerlo en PDF o Web, espero que con esta posibilidad de tenerla en EPUB te animes a suscribirte. Para ello accede a <a href="https://kiosco.lamarea.com/" target="_blank">kiosco.lamarea.com</a>.</p>
                 <p>Obviamente los números de <em>La Marea</em> saldrán en esta página con algo de retraso y pueden tener algunos pequeños errores, pero normalmente la demora es poca y los fallos mínimos.</p>
                 <p>El código fuente de esta web, y del script python que genera los EPUBs, se puede consultar en <a href="https://github.com/s-nt-s/lamareaepub" target="_blank">GitHub</a>.</p>
@@ -53,6 +53,7 @@
                 <p>(*) Para reducir el tamaño de los EPUBs a algo razonable se han recomprimido y redimensionado (y en algunos casos recortado) todas las imágenes, dejando solo en color la portada y las gráficas.</p>
                 <p>(*) Los EPUB contienen como <em>Apéndices</em> (último capítulo de cada EPUB) aquellos artículos que se enlazan en el número de la revista y que aún no perteneciendo a ella si pertenecen a otros contenidos de <em>La Marea</em>.</p>
                 <p>(*) El resto de enlaces se han modificado para que muestren entre corchetes el dominio de la web destino, de manera que el lector sepa el origen del contenido que se esta enlazando sin necesidad de pinchar en dicho enlace.</p>
+								<p>(*) Si la contraseña te da problemas probablemente sea porque contiene caracteres no <code>ascii</code> (por ejemplo la ñ), en tal caso intenta descomprimirlo por linea de comandos o con algún programa alternativo.</p>
             </div>
             <hr/>
             <p>Esta página no ha sido actualizada desde {{now}}</p>

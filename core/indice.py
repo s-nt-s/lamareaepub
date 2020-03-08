@@ -62,17 +62,12 @@ def build_indice_from_local(cnf):
     return True
 
 def build_indice_from_web(cnf):
-    wp = Web()
-    wp.get(cnf.url)
-    wp.submit("#login-form",
-        log=cnf.usuario,
-        pwd=cnf.clave
-    )
-    error = wp.val(".login-error")
-    if error:
+    wp = MareaSpider(cnf)
+    if wp.error:
         print("#"+str(cnf.num),"<", error, "[No se pudo generar %s]" % cnf.indice)
         cnf.indice = None
         return
+
 
 def build_indice(cnf):
     if os.path.isfile(cnf.indice):

@@ -178,18 +178,23 @@ class LaMarea():
         self.heads = []
         self.s =  requests.Session()
         self.s.headers = default_headers
+        r = self.s.get(config.url)
+        soup = bs4.BeautifulSoup(r.content, "lxml")
         if not config.portada:
-            r = self.s.get(config.url)
             m = rPortada.search(r.text)
             if m:
                 config.portada = m.group(1).replace("\\/", "/")
-        r = self.s.post(config.url,data={
+        r = self.s.post(config.url, data={
             "is_custom_login": 1,
             "log": config.usuario,
             "pwd": config.clave,
+            "mtnc_login_check": soup.select_one("#mtnc_login_check").attrs["value"],
             "submit": "Acceder"
         })
         soup = bs4.BeautifulSoup(r.content, "lxml")
+        error = soup.select_one(".login-error")
+        if error:
+            sys.exit(error.get_text().strip())
 
         info = soup.find("div",attrs={'id': "info"})
 
@@ -387,6 +392,9 @@ class LaMarea():
                         del a.attrs["target"]
 
         for img in soup.findAll("img"):
+            if "src" not in img.attrs:
+                img.unwrap()
+                continue
             src = img.attrs["src"]
             img.attrs.clear()
             img.attrs["src"] = src
@@ -432,7 +440,6 @@ class LaMarea():
             else:
                 art = img.find_parent("article")
                 if art and not art.get_text().strip():
-                    print(img.attrs["src"])
                     add_class(img, "grafica")
 
         for p in soup.findAll(["p", "figure"]):
