@@ -183,12 +183,20 @@ class LaMarea():
             m = rPortada.search(r.text)
             if m:
                 config.portada = m.group(1).replace("\\/", "/")
-        r = self.s.post(config.url,data={
-            "is_custom_login": 1,
+
+        r = self.s.get(config.url)
+        soup = bs4.BeautifulSoup(r.content, "lxml")
+        data={
             "log": config.usuario,
             "pwd": config.clave,
             "submit": "Acceder"
-        })
+        }
+        for i in soup.select("#login-form input"):
+            v = i.attrs.get("value")
+            n = i.attrs.get("name")
+            if n and n not in data and v:
+                data[n]=v
+        r = self.s.post(config.url,data=data)
         soup = bs4.BeautifulSoup(r.content, "lxml")
 
         info = soup.find("div",attrs={'id': "info"})
