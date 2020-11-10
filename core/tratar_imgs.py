@@ -15,6 +15,8 @@ import filecmp
 import zipfile
 import tempfile
 
+Image.MAX_IMAGE_PIXELS = 227152640
+
 '''
 import argparse
 

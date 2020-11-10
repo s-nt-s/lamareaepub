@@ -394,8 +394,17 @@ class LaMarea():
                     if "target" in a.attrs:
                         del a.attrs["target"]
 
+        for n in soup.findAll("noscript"):
+            l_i = len(n.select(":scope > img"))
+            l_t = len(n.select(":scope > *"))
+            if l_i == l_t:
+                n.unwrap()
+
         for img in soup.findAll("img"):
-            src = img.attrs["src"]
+            src = img.attrs.get("src")
+            if src is None:
+                img.extract()
+                continue
             img.attrs.clear()
             img.attrs["src"] = src
             div = img.parent
