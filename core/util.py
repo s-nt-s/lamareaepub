@@ -7,6 +7,7 @@ import argparse
 import time
 from urllib.parse import urlparse, urljoin
 from os.path import splitext
+import yaml
 
 rPortada = re.compile(r'"body_bg"\s*:\s*"\s*([^"]+)\s*"', re.IGNORECASE)
 tab = re.compile("^", re.MULTILINE)
@@ -31,6 +32,23 @@ inline = ["span", "strong", "b", "del", "i", "em"]
 urls = ["#", "javascript:void(0)"]
 
 meses = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+def read_config(file):
+    config = None
+    with open(file, 'r') as f:
+        generator = yaml.load_all(f, Loader=yaml.FullLoader)
+        config = next(generator)
+        for d in generator:
+            if "url" not in d:
+                d["url"] = "http://www.revista.lamarea.com/"
+            if "usuario" not in d:
+                d["usuario"] = "LM"+str(d["num"])
+
+            for k in ("portada", "fecha", "titulo"):
+                if k not in d:
+                    d[k] = None
+            config[d['num']] = d
+    return config
 
 def get_html(soup):
     h = str(soup)

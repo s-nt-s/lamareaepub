@@ -1,5 +1,4 @@
-#!/usr/bin/python3
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
 import argparse
 import yaml
@@ -7,7 +6,7 @@ import sys
 import os
 from bunch import Bunch
 from core.lamareahtml import LaMarea, tune_html_for_epub
-from core.util import get_html
+from core.util import get_html, read_config
 from core.j2 import Jnj2, my_date
 from core.tratar_imgs import tune_epub
 from glob import glob
@@ -51,21 +50,7 @@ if not os.path.isfile(arg.config):
 def get_path_html(num):
     return html_dir + "lamarea_" + str(num) + ".html"
 
-
-with open(arg.config, 'r') as f:
-    generator = yaml.load_all(f, Loader=yaml.FullLoader)
-    config = next(generator)
-    for d in generator:
-        if "url" not in d:
-            d["url"] = "http://www.revista.lamarea.com/"
-        if "usuario" not in d:
-            d["usuario"] = "LM"+str(d["num"])
-
-        for k in ("portada", "fecha", "titulo"):
-            if k not in d:
-                d[k] = None
-        config[d['num']] = d
-
+config = read_config(arg.config)
 
 if arg.html or arg.todo:
     graficas = set()
